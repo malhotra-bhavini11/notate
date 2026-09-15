@@ -1,0 +1,12 @@
+# Never line-ending-convert binary files. Some PDFs contain no NUL bytes, so git
+# would otherwise treat them as text and core.autocrlf would corrupt their xref offsets.
+*.pdf binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.wasm binary
