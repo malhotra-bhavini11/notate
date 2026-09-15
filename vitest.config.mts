@@ -4,9 +4,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname),
+      "@": path.resolve(import.meta.dirname),
       // `server-only` throws outside Next's react-server bundle; lib tests run in plain Node.
-      "server-only": path.resolve(__dirname, "tests/empty-module.ts"),
+      "server-only": path.resolve(import.meta.dirname, "tests/empty-module.ts"),
     },
   },
   test: {

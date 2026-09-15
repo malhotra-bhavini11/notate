@@ -4,8 +4,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { parseMarkdown, stringifyMarkdown } from "./frontmatter";
+import { buildTree } from "./tree";
+import { flattenTree } from "./tree-utils";
 import { isPlainObject, toTags } from "./values";
-import { buildTree, flattenFiles } from "./tree";
 import type { NoteDTO, NoteSummary, SaveNoteBody, SaveNoteResponse } from "./types";
 import { ensureWorkspace, resolveInWorkspace, WorkspaceError, writeFileAtomic } from "./workspace";
 
@@ -74,7 +75,7 @@ export async function writeNote(segments: string[], body: SaveNoteBody): Promise
 /** Most recently modified notes, with the frontmatter fields the dashboard shows. */
 export async function listRecentNotes(limit = 20): Promise<NoteSummary[]> {
   const root = await ensureWorkspace();
-  const files = flattenFiles(await buildTree(root))
+  const files = flattenTree(await buildTree(root))
     .filter((f) => f.ext === "md")
     .sort((a, b) => b.mtime - a.mtime)
     .slice(0, limit);

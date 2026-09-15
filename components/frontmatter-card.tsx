@@ -106,7 +106,8 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
   };
 
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+    // min-w keeps tags from squeezing to zero in narrow panes; the row wraps them below instead.
+    <div className="flex min-w-48 flex-1 flex-wrap items-center gap-1">
       <Hash className="size-3.5 text-muted-foreground" />
       {tags.map((tag) => (
         <Badge key={tag} variant="outline" className="gap-0.5 pr-0.5">

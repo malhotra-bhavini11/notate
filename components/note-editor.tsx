@@ -39,8 +39,18 @@ async function postNote(path: string, body: SaveNoteBody, keepalive = false) {
   }
 }
 
-export function NoteEditor({ path }: { path: string }) {
+interface NoteEditorProps {
+  path: string;
+  /** Called once with the note's frontmatter after it loads (split view uses `source`). */
+  onLoaded?: (frontmatter: Frontmatter) => void;
+}
+
+export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
   const { refresh } = useWorkspace();
+  const onLoadedRef = useRef(onLoaded);
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+  });
   const [load, setLoad] = useState<LoadState>({ kind: "loading" });
   const [doc, setDoc] = useState<Doc>({ frontmatter: {}, content: "" });
   const [status, setStatus] = useState<SaveStatus>("saved");
@@ -68,6 +78,7 @@ export function NoteEditor({ path }: { path: string }) {
         latest.current = loaded;
         setDoc(loaded);
         setLoad({ kind: "ready" });
+        onLoadedRef.current?.(note.frontmatter);
       })
       .catch((err) => !cancelled && setLoad({ kind: "error", message: String(err.message ?? err) }));
     return () => {

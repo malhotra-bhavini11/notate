@@ -1,0 +1,75 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 5 0 R 6 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R /Annots [8 0 R] >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 792 612] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+7 0 obj
+<< /Length 645 >>
+stream
+BT
+/F1 22 Tf 1 0 0 1 72 700 Tm (notate sample PDF) Tj
+/F1 12 Tf 1 0 0 1 72 670 Tm (Open this file on the left and a note on the right in split view.) Tj
+/F1 12 Tf 1 0 0 1 72 640 Tm (Things to try:) Tj
+/F1 12 Tf 1 0 0 1 90 620 Tm (- Drag the divider between the panes, or focus it and use the arrow keys.) Tj
+/F1 12 Tf 1 0 0 1 90 600 Tm (- Zoom with the + / - buttons; the reading position is kept.) Tj
+/F1 12 Tf 1 0 0 1 90 580 Tm (- Select this text and copy it into your note.) Tj
+/F1 12 Tf 1 0 0 1 90 560 Tm (- Type a page number in the toolbar to jump.) Tj
+/F1 12 Tf 1 0 0 1 72 520 Tm (Internal link test: click here to jump to page 3.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Link /Rect [72 515 360 535] /Border [0 0 0] /Dest [6 0 R /Fit] >>
+endobj
+9 0 obj
+<< /Length 269 >>
+stream
+BT
+/F1 18 Tf 1 0 0 1 72 540 Tm (Page 2 is landscape) Tj
+/F1 12 Tf 1 0 0 1 72 510 Tm (Pages with different sizes keep their own aspect ratio in the viewer.) Tj
+/F1 12 Tf 1 0 0 1 72 480 Tm (Negative binomial model: K ~ NB\(mu, alpha\), Var\(K\) = mu + alpha * mu^2) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 129 >>
+stream
+BT
+/F1 18 Tf 1 0 0 1 72 700 Tm (Page 3) Tj
+/F1 12 Tf 1 0 0 1 72 670 Tm (You arrived here from the internal link on page 1.) Tj
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000133 00000 n 
+0000000230 00000 n 
+0000000372 00000 n 
+0000000498 00000 n 
+0000000625 00000 n 
+0000001321 00000 n 
+0000001428 00000 n 
+0000001748 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+1929
+%%EOF

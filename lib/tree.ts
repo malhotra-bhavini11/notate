@@ -55,8 +55,3 @@ export async function buildTree(dir: string, relative = ""): Promise<TreeNode> {
       ),
   };
 }
-
-export function flattenFiles(node: TreeNode): TreeNode[] {
-  if (node.type === "file") return [node];
-  return (node.children ?? []).flatMap(flattenFiles);
-}

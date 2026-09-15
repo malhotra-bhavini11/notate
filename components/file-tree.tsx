@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { hrefForFile } from "@/lib/paths";
 import type { TreeNode } from "@/lib/types";
 
 const CODE_EXTS = new Set([
@@ -13,7 +12,7 @@ const CODE_EXTS = new Set([
   "xml", "sql", "nf", "smk", "wdl", "c", "cpp", "h", "rs", "go", "java", "jl", "m",
 ]);
 
-function FileIcon({ ext }: { ext?: string }) {
+export function FileIcon({ ext }: { ext?: string }) {
   const cls = "size-4 shrink-0 text-muted-foreground";
   if (ext === "md") return <FileText className={cls} />;
   if (ext === "pdf") return <FileType className={cn(cls, "text-red-500/80")} />;
@@ -32,27 +31,32 @@ function filterTree(node: TreeNode, query: string): TreeNode | null {
     : null;
 }
 
-function ancestorsOf(p: string | null): Set<string> {
+function ancestorsOf(paths: string[]): Set<string> {
   const set = new Set<string>();
-  if (!p) return set;
-  const parts = p.split("/");
-  for (let i = 1; i < parts.length; i++) set.add(parts.slice(0, i).join("/"));
+  for (const p of paths) {
+    const parts = p.split("/");
+    for (let i = 1; i < parts.length; i++) set.add(parts.slice(0, i).join("/"));
+  }
   return set;
 }
 
 interface FileTreeProps {
   root: TreeNode;
-  activePath: string | null;
+  /** Highlighted files: the open note/file, or both panes in split view. */
+  activePaths: string[];
+  hrefFor: (path: string) => string;
+  /** Called when a file link is followed, e.g. to close the mobile sidebar. */
+  onNavigate?: () => void;
   query: string;
 }
 
-export function FileTree({ root, activePath, query }: FileTreeProps) {
+export function FileTree({ root, activePaths, hrefFor, onNavigate, query }: FileTreeProps) {
   const [toggled, setToggled] = useState<Map<string, boolean>>(new Map());
   const q = query.trim().toLowerCase();
   const visible = useMemo(() => (q ? filterTree(root, q) : root), [root, q]);
-  const activeAncestors = useMemo(() => ancestorsOf(activePath), [activePath]);
+  const activeAncestors = ancestorsOf(activePaths);
 
-  // Folders start collapsed except those containing the open file; while
+  // Folders start collapsed except those containing an open file; while
   // filtering, everything that matched is shown expanded.
   const isOpen = (p: string) => (q ? true : (toggled.get(p) ?? activeAncestors.has(p)));
   const toggle = (p: string) => setToggled((prev) => new Map(prev).set(p, !isOpen(p)));
@@ -96,11 +100,12 @@ export function FileTree({ root, activePath, query }: FileTreeProps) {
       );
     }
 
-    const active = node.path === activePath;
+    const active = activePaths.includes(node.path);
     return (
       <li key={node.path}>
         <Link
-          href={hrefForFile(node.path)}
+          href={hrefFor(node.path)}
+          onClick={onNavigate}
           aria-current={active ? "page" : undefined}
           title={node.path}
           className={cn(

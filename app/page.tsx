@@ -11,7 +11,7 @@ import { noteHref, relativeTime } from "@/lib/paths";
 import type { NoteSummary } from "@/lib/types";
 
 export default function DashboardPage() {
-  const { tree, setNewNoteOpen } = useWorkspace();
+  const { tree, openNewNote } = useWorkspace();
   const [notes, setNotes] = useState<NoteSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +37,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Recently edited</h1>
           <p className="text-sm text-muted-foreground">Notes in your workspace, newest first.</p>
         </div>
-        <Button onClick={() => setNewNoteOpen(true)}>
+        <Button onClick={() => openNewNote()}>
           <Plus />
           New note
         </Button>
