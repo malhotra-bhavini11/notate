@@ -16,18 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type NewNoteRequest, useWorkspace } from "@/components/workspace-provider";
 import { noteApiUrl, noteHref, slugifyFileName } from "@/lib/paths";
-import { NOTE_TEMPLATES, getTemplate } from "@/lib/templates";
-import type { Frontmatter, SaveNoteBody } from "@/lib/types";
+import { getTemplate, mergeFrontmatter, NOTE_TEMPLATES } from "@/lib/templates";
+import type { SaveNoteBody } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
-
-/** Template frontmatter with presets placed right after the title (e.g. `source`). */
-function mergeFrontmatter(base: Frontmatter, preset: Frontmatter = {}): Frontmatter {
-  const merged: Frontmatter = { title: base.title, ...preset };
-  for (const [key, value] of Object.entries(base)) if (!(key in merged)) merged[key] = value;
-  return merged;
-}
 
 export function NewNoteDialog() {
   const { newNote, closeNewNote } = useWorkspace();

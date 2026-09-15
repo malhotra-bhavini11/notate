@@ -1,5 +1,6 @@
 ---
 title: DESeq2 – Moderated estimation of fold change and dispersion
+citekey: love2014moderated
 type: paper-review
 authors: [Michael I. Love, Wolfgang Huber, Simon Anders]
 year: 2014

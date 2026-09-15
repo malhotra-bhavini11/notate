@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { Frontmatter, IndexDTO, TreeNode } from "@/lib/types";
+import type { Frontmatter, IndexDTO, ReferencesDTO, TreeNode } from "@/lib/types";
 
 /** Presets for the New note dialog, e.g. when creating a note for the open PDF. */
 export interface NewNoteRequest {
@@ -20,6 +20,8 @@ interface WorkspaceContextValue {
   tree: TreeNode | null;
   /** Note titles/tags and linkable files, for link resolution, tags, and autocomplete. */
   index: IndexDTO | null;
+  /** Entries in references.bib, for citations, autocomplete, and the references page. */
+  references: ReferencesDTO | null;
   error: string | null;
   loading: boolean;
   /** Re-fetches the tree and index, e.g. after creating a note. */
@@ -28,6 +30,10 @@ interface WorkspaceContextValue {
   newNote: (NewNoteRequest & { id: number }) | null;
   openNewNote: (request?: NewNoteRequest) => void;
   closeNewNote: () => void;
+  /** Non-null while the Import citation dialog is open; `query` pre-fills it. */
+  citationImport: { id: number; query?: string } | null;
+  openCitationImport: (query?: string) => void;
+  closeCitationImport: () => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -42,17 +48,24 @@ async function fetchJson<T>(url: string): Promise<T> {
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [tree, setTree] = useState<TreeNode | null>(null);
   const [index, setIndex] = useState<IndexDTO | null>(null);
+  const [references, setReferences] = useState<ReferencesDTO | null>(null);
+  const [citationImport, setCitationImport] = useState<WorkspaceContextValue["citationImport"]>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [newNote, setNewNote] = useState<WorkspaceContextValue["newNote"]>(null);
 
   const refresh = useCallback(
     () =>
-      Promise.all([fetchJson<TreeNode>("/api/fs/tree"), fetchJson<IndexDTO>("/api/index")])
+      Promise.all([
+        fetchJson<TreeNode>("/api/fs/tree"),
+        fetchJson<IndexDTO>("/api/index"),
+        fetchJson<ReferencesDTO>("/api/references"),
+      ])
         .then(
-          ([nextTree, nextIndex]) => {
+          ([nextTree, nextIndex, nextReferences]) => {
             setTree(nextTree);
             setIndex(nextIndex);
+            setReferences(nextReferences);
             setError(null);
           },
           (err) => setError(err instanceof Error ? err.message : String(err)),
@@ -72,10 +85,25 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   // The id changes on every open so the dialog's form resets to the new presets.
   const openNewNote = useCallback((request: NewNoteRequest = {}) => setNewNote({ ...request, id: Date.now() }), []);
   const closeNewNote = useCallback(() => setNewNote(null), []);
+  const openCitationImport = useCallback((query?: string) => setCitationImport({ id: Date.now(), query }), []);
+  const closeCitationImport = useCallback(() => setCitationImport(null), []);
 
   const value = useMemo(
-    () => ({ tree, index, error, loading, refresh, newNote, openNewNote, closeNewNote }),
-    [tree, index, error, loading, refresh, newNote, openNewNote, closeNewNote],
+    () => ({
+      tree,
+      index,
+      references,
+      error,
+      loading,
+      refresh,
+      newNote,
+      openNewNote,
+      closeNewNote,
+      citationImport,
+      openCitationImport,
+      closeCitationImport,
+    }),
+    [tree, index, references, error, loading, refresh, newNote, openNewNote, closeNewNote, citationImport, openCitationImport, closeCitationImport],
   );
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

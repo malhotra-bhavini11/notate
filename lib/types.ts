@@ -27,7 +27,51 @@ export interface NoteSummary {
   title: string;
   type?: string;
   tags: string[];
+  /** Citation keys referenced with [@key]. */
+  citations: string[];
+  /** Frontmatter `citekey`, set on reading notes created from a reference. */
+  citekey?: string;
   mtime: number;
+}
+
+/** One bibliography entry, flattened from CSL-JSON for display. */
+export interface ReferenceDTO {
+  key: string;
+  /** CSL type, e.g. `article-journal`, `article` (preprint), `book`. */
+  type: string;
+  title: string;
+  /** "Family, Given" for each author, in order. */
+  authors: string[];
+  year?: number;
+  container?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
+  publisher?: string;
+  doi?: string;
+  pmid?: string;
+  pmcid?: string;
+  arxiv?: string;
+  url?: string;
+  abstract?: string;
+  /** Full APA reference, plain text. */
+  formatted: string;
+  /** In-text citation without parentheses, e.g. `Love et al., 2014`. */
+  inText: string;
+  bibtex: string;
+}
+
+export interface ReferencesDTO {
+  entries: ReferenceDTO[];
+  /** Set when references.bib exists but couldn't be parsed. */
+  error?: string;
+}
+
+export interface LookupResponse {
+  identifier: string;
+  reference: ReferenceDTO;
+  /** Key of an entry in references.bib with the same DOI/PMID/arXiv ID, if any. */
+  existingKey?: string;
 }
 
 export interface IndexDTO {

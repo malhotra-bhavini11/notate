@@ -24,7 +24,16 @@ async function writeClipboard(text: string) {
   if (!ok) throw new Error("Copy failed");
 }
 
-export function CopyButton({ getText, className, label = "Copy code" }: { getText: () => string; className?: string; label?: string }) {
+interface CopyButtonProps {
+  getText: () => string;
+  className?: string;
+  /** Accessible name and tooltip. */
+  label?: string;
+  /** Visible text while idle. */
+  text?: string;
+}
+
+export function CopyButton({ getText, className, label = "Copy code", text = "Copy" }: CopyButtonProps) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -51,7 +60,7 @@ export function CopyButton({ getText, className, label = "Copy code" }: { getTex
       )}
     >
       {state === "copied" ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
-      <span aria-live="polite">{state === "copied" ? "Copied" : state === "failed" ? "Failed" : "Copy"}</span>
+      <span aria-live="polite">{state === "copied" ? "Copied" : state === "failed" ? "Failed" : text}</span>
     </button>
   );
 }

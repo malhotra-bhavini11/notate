@@ -109,6 +109,7 @@ describe("languageForPath", () => {
     expect(languageForPath("workflow/Snakefile")).toBe("python");
     expect(languageForPath("analysis/de.R")).toBe("r");
     expect(languageForPath("env/environment.yml")).toBe("yaml");
+    expect(languageForPath("references.bib")).toBe("bibtex");
     expect(languageForPath("data/counts.tsv")).toBeNull();
     expect(languageForPath("README")).toBeNull();
   });

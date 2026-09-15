@@ -43,7 +43,7 @@ Diff lines use `# [!code ++]` / `# [!code --]`. Highlight lines with `{2-3}` aft
 - [ ] Reference annotation version recorded
 
 ## Related
-Downstream differential expression follows [[deseq2-love-2014]]. That method works on raw counts, so log-CPM output is only for exploratory plots. #rna-seq #bio/normalisation
+Downstream differential expression follows [[deseq2-love-2014]]. That method works on raw counts [@love2014moderated, sec. "Methods"], so log-CPM output is only for exploratory plots. #rna-seq #bio/normalisation
 
 ## Performance
 `DataFrame.apply(..., axis=1)` over ~60k genes is $O(n \cdot m)$ in Python. The vectorised version above avoids the per-row overhead.

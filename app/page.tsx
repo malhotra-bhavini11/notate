@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { BookPlus, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { NoteGrid } from "@/components/note-card";
@@ -14,7 +14,7 @@ const TAG_LIMIT = 30;
 
 export default function DashboardPage() {
   // The index refreshes on tab focus and after creating notes, keeping this current.
-  const { index, error, openNewNote } = useWorkspace();
+  const { index, error, openNewNote, openCitationImport } = useWorkspace();
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
@@ -23,10 +23,16 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Recently edited</h1>
           <p className="text-sm text-muted-foreground">Notes in your workspace, newest first.</p>
         </div>
-        <Button onClick={() => openNewNote()}>
-          <Plus />
-          New note
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => openCitationImport()}>
+            <BookPlus />
+            Import citation
+          </Button>
+          <Button onClick={() => openNewNote()}>
+            <Plus />
+            New note
+          </Button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">Couldn&apos;t load notes: {error}</p>}

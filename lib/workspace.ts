@@ -8,7 +8,7 @@ import path from "node:path";
 export class WorkspaceError extends Error {
   constructor(
     message: string,
-    readonly status: 400 | 403 | 404 | 409 | 413 | 415,
+    readonly status: 400 | 403 | 404 | 409 | 413 | 415 | 502 | 504,
   ) {
     super(message);
     this.name = "WorkspaceError";

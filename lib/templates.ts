@@ -174,3 +174,11 @@ $\\blacksquare$
 ];
 
 export const getTemplate = (id: string) => NOTE_TEMPLATES.find((t) => t.id === id) ?? NOTE_TEMPLATES[0];
+
+/** Template frontmatter with presets placed right after the title (e.g. `source`, `citekey`). */
+export function mergeFrontmatter(base: Frontmatter, preset: Frontmatter = {}): Frontmatter {
+  const merged: Frontmatter = { title: base.title };
+  for (const [key, value] of Object.entries(preset)) if (value !== undefined) merged[key] = value;
+  for (const [key, value] of Object.entries(base)) if (!(key in merged)) merged[key] = value;
+  return merged;
+}

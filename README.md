@@ -40,6 +40,30 @@ The pdf.js worker, fonts, cmaps and wasm are copied from `node_modules` into `pu
 - **Tags:** `#tag` or nested `#bio/rna-seq` inline, plus frontmatter `tags:`. `/tags/bio` includes nested `bio/*` tags. Numbers-only tags like `#42` are ignored.
 - **Ignored contexts:** links and tags inside code blocks, inline code, math and URLs don't count. In tables, escape the alias pipe: `[[note\|text]]`.
 
+## Citations
+
+**Import citation** (sidebar, dashboard, or the References page) accepts:
+- a DOI, like `10.1186/s13059-014-0550-8`
+- a PubMed ID (`25516281`, `PMID: 25516281`) or PMC ID (`PMC4302049`)
+- an arXiv ID (`arXiv:1706.03762`)
+- a link from doi.org, PubMed, PMC, arXiv, bioRxiv/medRxiv, or a publisher page with the DOI in its path
+
+Metadata comes as CSL-JSON:
+- **DOIs** via content negotiation at doi.org. That covers Crossref and DataCite, which includes arXiv, Zenodo, and bioRxiv.
+- **PubMed and PMC** via NCBI's citation exporter.
+- **Redirects** are followed only to those metadata hosts, over HTTPS.
+
+What an import does:
+- **Citation key:** suggested in `author + year + first title word` style (`love2014moderated`), unique within the library, and editable before adding.
+- **Library file:** the entry is appended as BibTeX to `workspace/references.bib`. Existing entries, hand-written or exported from Zotero, are never rewritten. A work already in the file (same DOI, PMID, or arXiv ID) is detected instead of duplicated.
+- **Reading note (optional):** `papers/<key>.md`, from the paper-review template, with `citekey`, authors, year, journal, and DOI in the frontmatter and the abstract when the source provides one.
+
+Citing and browsing:
+- **Syntax:** Pandoc-style, `[@key]`, `[@key, p. 3]`, `[see @a; @b]`, or `[-@key]` (year only). Type `[@` in the editor for suggestions.
+- **In the preview:** citations render as APA in-text citations that link to the reading note, or to the references page if there's no note. A formatted **References** list closes the note.
+- **`/references`:** lists every entry with its identifiers, reading note, the notes citing it, and copy buttons for the key and the BibTeX entry.
+- **Removing entries:** edit `references.bib` directly.
+
 ## Code blocks
 
 Fenced code in notes is highlighted with Shiki (`github-dark-default`) and gets a header with the language or title and a **Copy** button.
@@ -67,6 +91,9 @@ counts = counts.dropna()  # [!code --]
 | `GET /api/fs/tree` | Nested JSON tree of the workspace (`name, path, type, ext, mtime, size, children`) |
 | `GET /api/notes?limit=20` | Recently modified notes with title, type, tags |
 | `GET /api/index` | All notes (title, type, tags), linkable files and tag counts. Parsed notes are cached by mtime |
+| `POST /api/citations/lookup` | `{ query }` → metadata, suggested key, and `existingKey` if already in the library |
+| `GET /api/references` | Entries in `references.bib` with APA text, in-text form and BibTeX. `error` if the file can't be parsed |
+| `POST /api/references` | `{ query, key }`. Re-fetches the metadata (cached briefly) and appends to `references.bib`. `409` for a duplicate work or key |
 | `GET /api/backlinks/[...slug]` | Notes linking to a note or file, with `{ line, context }` for each mention |
 | `GET /api/notes/[...slug]` | `{ path, frontmatter, content, mtime }` for a `.md` file |
 | `POST /api/notes/[...slug]` | JSON `{ frontmatter?, content, createOnly? }`; atomic write; `409` if `createOnly` and the file exists |

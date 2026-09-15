@@ -1,18 +1,19 @@
 "use client";
 
-import { Columns2, FileText, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
+import { BookPlus, Columns2, FileText, Hash, Library, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
 
 import { FileIcon, FileTree } from "@/components/file-tree";
+import { ImportCitationDialog } from "@/components/import-citation-dialog";
 import { NewNoteDialog } from "@/components/new-note-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWorkspaceLocation } from "@/components/use-workspace-location";
 import { useWorkspace } from "@/components/workspace-provider";
-import { activePaths, splitToggleHref, treeHrefFor, type WorkspaceLocation } from "@/lib/paths";
+import { activePaths, referencesHref, splitToggleHref, tagHref, treeHrefFor, type WorkspaceLocation } from "@/lib/paths";
 import { cn } from "@/lib/utils";
 
 const NARROW_QUERY = "(max-width: 767px)";
@@ -24,7 +25,7 @@ function subscribeNarrow(onChange: () => void) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { error, loading, refresh, openNewNote } = useWorkspace();
+  const { error, loading, refresh, openNewNote, openCitationImport, references, index } = useWorkspace();
   const isNarrow = useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => false);
   // null = default: docked open on desktop, closed overlay on phones.
   const [sidebarChoice, setSidebarOpen] = useState<boolean | null>(null);
@@ -89,7 +90,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </TooltipTrigger>
               <TooltipContent>New note (Ctrl+Alt+N)</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button variant="ghost" size="icon-sm" onClick={() => openCitationImport()} aria-label="Import citation" />
+                }
+              >
+                <BookPlus />
+              </TooltipTrigger>
+              <TooltipContent>Import citation (DOI, PMID, arXiv)</TooltipContent>
+            </Tooltip>
           </div>
+        </div>
+
+        <div className="flex gap-1 border-b px-2 py-1.5">
+          <Link
+            href={referencesHref()}
+            onClick={closeIfNarrow}
+            className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+          >
+            <Library className="size-4 text-muted-foreground" />
+            References
+            {references && <span className="ml-auto text-xs text-muted-foreground tabular-nums">{references.entries.length}</span>}
+          </Link>
+          <Link
+            href={tagHref()}
+            onClick={closeIfNarrow}
+            className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+          >
+            <Hash className="size-4 text-muted-foreground" />
+            Tags
+            {index && <span className="ml-auto text-xs text-muted-foreground tabular-nums">{index.tags.length}</span>}
+          </Link>
         </div>
 
         <div className="p-2">
@@ -138,6 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <NewNoteDialog />
+      <ImportCitationDialog />
     </div>
   );
 }
@@ -211,6 +244,8 @@ function LocationCrumbs({ location }: { location: WorkspaceLocation }) {
   switch (location.mode) {
     case "dashboard":
       return <span className="text-sm text-muted-foreground">Dashboard</span>;
+    case "references":
+      return <span className="text-sm text-muted-foreground">References</span>;
     case "tags":
       return (
         <span className="truncate text-sm text-muted-foreground">

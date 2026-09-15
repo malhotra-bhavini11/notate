@@ -23,6 +23,11 @@ Everything here is a plain Markdown file in the `workspace/` folder. Edit notes 
 - Every note lists the notes that link to it under **Linked from**.
 - Tag inline with #getting-started, or nest tags like #bio/rna-seq. Click a tag to see every note that has it.
 
+## Citations
+- **Import citation** (sidebar) takes a DOI, PubMed ID, PMC ID, arXiv ID, or a link. It adds the entry to `references.bib` and can create a reading note.
+- Cite with `[@key]`, `[@key, p. 3]`, or `[@a; @b]`. Type `[@` for suggestions. For example, DESeq2 [@love2014moderated] and transformers [@vaswani2017attention].
+- The preview ends with a formatted **References** list. The References page shows every entry and the notes that cite it.
+
 ## Markdown features
 | Feature | Syntax |
 |---|---|

@@ -4,7 +4,7 @@ import "katex/dist/katex.min.css";
 
 import rehypeShikiFromHighlighter from "@shikijs/rehype/core";
 import Link from "next/link";
-import { createContext, Suspense, use, useContext, useMemo } from "react";
+import { createContext, Fragment, Suspense, use, useContext, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -15,8 +15,9 @@ import { CodeBlock } from "@/components/code-block";
 import { useNoteLinks } from "@/components/use-note-links";
 import { useWorkspace } from "@/components/workspace-provider";
 import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
-import { remarkWikiTokens } from "@/lib/markdown-tokens";
-import { tagHref } from "@/lib/paths";
+import { extractLinksAndTags, parseCitation, remarkWikiTokens } from "@/lib/markdown-tokens";
+import { noteHref, referencesHref, tagHref } from "@/lib/paths";
+import type { ReferenceDTO } from "@/lib/types";
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens];
 // KaTeX first: display math also arrives as <pre><code class="language-math">,
@@ -38,6 +39,9 @@ const COMPONENTS: Components = {
     const properties = node?.properties ?? {};
     if (typeof properties.dataWikilink === "string") {
       return <WikiLink target={properties.dataWikilink}>{children}</WikiLink>;
+    }
+    if (typeof properties.dataCitation === "string") {
+      return <Citation inner={properties.dataCitation}>{children}</Citation>;
     }
     if (typeof properties.dataTag === "string") {
       return (
@@ -81,6 +85,7 @@ export function MarkdownPreview({ content, fromPath }: MarkdownPreviewProps) {
         <Suspense fallback={<MarkdownBody content={content} rehypePlugins={BASE_REHYPE_PLUGINS} />}>
           <HighlightedMarkdownBody content={content} />
         </Suspense>
+        <CitedReferences content={content} />
       </article>
     </FromPathContext.Provider>
   );
@@ -153,5 +158,82 @@ function WikiLink({ target, children }: { target: string; children: React.ReactN
     >
       {children}
     </button>
+  );
+}
+
+function useReferenceLookup() {
+  const { references, index } = useWorkspace();
+  return useMemo(() => {
+    const byKey = new Map((references?.entries ?? []).map((e) => [e.key.toLowerCase(), e]));
+    const notesByKey = new Map((index?.notes ?? []).filter((n) => n.citekey).map((n) => [n.citekey!.toLowerCase(), n.path]));
+    return {
+      ready: references !== null,
+      find: (key: string) => byKey.get(key.toLowerCase()),
+      noteFor: (key: string) => notesByKey.get(key.toLowerCase()),
+    };
+  }, [references, index]);
+}
+
+/** `[see @love2014moderated, p. 3; -@vaswani2017attention]` → (see Love et al., 2014, p. 3; 2017) */
+function Citation({ inner, children }: { inner: string; children: React.ReactNode }) {
+  const { ready, find, noteFor } = useReferenceLookup();
+  const items = parseCitation(inner);
+  if (!items || !ready) return <span className="citation">{children}</span>;
+
+  return (
+    <span className="citation">
+      (
+      {items.map((item, i) => {
+        const entry = find(item.key);
+        const note = noteFor(item.key);
+        const label = entry ? (item.suppressAuthor ? String(entry.year ?? "n.d.") : entry.inText) : `@${item.key}`;
+        const text = [item.prefix, label].filter(Boolean).join(" ") + (item.locator ? `, ${item.locator}` : "");
+        return (
+          <Fragment key={i}>
+            {i > 0 && "; "}
+            {entry ? (
+              <Link href={note ? noteHref(note) : referencesHref(entry.key)} className="citation-item" title={entry.formatted}>
+                {text}
+              </Link>
+            ) : (
+              <Link href={referencesHref()} className="citation-item citation-missing" title={`@${item.key} isn't in references.bib`}>
+                {text}?
+              </Link>
+            )}
+          </Fragment>
+        );
+      })}
+      )
+    </span>
+  );
+}
+
+/** Bibliography for the keys cited in this note, APA-sorted, like Pandoc's references section. */
+function CitedReferences({ content }: { content: string }) {
+  const { ready, find } = useReferenceLookup();
+  const keys = useMemo(() => extractLinksAndTags(content).citations, [content]);
+  if (!ready || keys.length === 0) return null;
+
+  const found = keys.map(find).filter((e): e is ReferenceDTO => e !== undefined);
+  const missing = keys.filter((k) => !find(k));
+  const sorted = [...new Map(found.map((e) => [e.key, e])).values()].sort((a, b) => a.formatted.localeCompare(b.formatted));
+
+  return (
+    <section aria-labelledby="cited-references" className="mt-10 border-t pt-4">
+      <h2 id="cited-references" className="mt-0!">References</h2>
+      <ul className="list-none pl-0">
+        {sorted.map((e) => (
+          <li key={e.key} className="pl-6 -indent-6 text-sm">
+            {e.formatted}
+          </li>
+        ))}
+      </ul>
+      {missing.length > 0 && (
+        <p className="text-sm text-destructive">
+          Not in references.bib: {missing.map((k) => `@${k}`).join(", ")}.{" "}
+          <Link href={referencesHref()}>Import them</Link>.
+        </p>
+      )}
+    </section>
   );
 }

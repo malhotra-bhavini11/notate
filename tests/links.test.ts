@@ -22,6 +22,34 @@ describe("tokenize", () => {
   });
 });
 
+describe("citations", () => {
+  const cites = (s: string) => tokenize(s).flatMap((t) => (typeof t === "object" && t.type === "citation" ? [t.items] : []));
+
+  it("parses pandoc-style citations with locators, prefixes, and suppressed authors", () => {
+    expect(cites("As shown [@love2014moderated, p. 3].")).toEqual([
+      [{ key: "love2014moderated", locator: "p. 3", suppressAuthor: false }],
+    ]);
+    expect(cites("[see @doe99, pp. 33-35; also -@smith04]")).toEqual([
+      [
+        { key: "doe99", prefix: "see", locator: "pp. 33-35", suppressAuthor: false },
+        { key: "smith04", prefix: "also", suppressAuthor: true },
+      ],
+    ]);
+    expect(cites("[@Vaswani2017.]")).toEqual([[{ key: "Vaswani2017", suppressAuthor: false }]]);
+  });
+
+  it("ignores emails, plain brackets, and parts without a key", () => {
+    expect(cites("[mail me@example.org] [a note] [@ok; not a key]")).toEqual([]);
+  });
+
+  it("is extracted from notes but not from code or links", () => {
+    const { citations } = extractLinksAndTags(
+      "Text [@love2014moderated; @vaswani2017attention].\n\n`[@code]` and [@linked](https://x.org)\n\n```\n[@block]\n```",
+    );
+    expect(citations).toEqual(["love2014moderated", "vaswani2017attention"]);
+  });
+});
+
 describe("extractLinksAndTags", () => {
   const body = [
     "# Heading is not a tag",

@@ -4,7 +4,7 @@
 
 @plugin "@tailwindcss/typography";
 
-/* [[wikilinks]] and #tags rendered in note previews. Deliberately unlayered:
+/* [[wikilinks]], [@citations], and #tags rendered in note previews. Deliberately unlayered:
    the typography plugin's link styles live in the utilities layer and would
    otherwise win. */
 .wikilink {
@@ -12,6 +12,12 @@
 }
 .wikilink-missing {
   @apply cursor-pointer text-muted-foreground underline decoration-dashed hover:text-foreground;
+}
+.citation-item {
+  @apply text-sky-700 no-underline hover:underline dark:text-sky-400;
+}
+.citation-missing {
+  @apply text-destructive underline decoration-dashed;
 }
 /* Shiki code blocks (components/code-block.tsx). Lines become grid rows so
    highlight and diff backgrounds span the full width; the "\n" text nodes

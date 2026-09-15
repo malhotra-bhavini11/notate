@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { FileIcon } from "@/components/file-tree";
@@ -10,19 +11,24 @@ import { cn } from "@/lib/utils";
 const MAX_SUGGESTIONS = 8;
 // `[[` followed by the partial target, up to the caret.
 const OPEN_LINK_RE = /\[\[([^[\]\n|#]*)$/;
+// `[@`, `[-@`, or `; @` inside a citation, followed by the partial key.
+const OPEN_CITATION_RE = /(?:\[|;\s*)-?@([\p{L}\p{N}_:.#$%&+?<>~/-]*)$/u;
 
 interface Suggestion {
-  path: string;
+  id: string;
   label: string;
-  /** What goes between the brackets. */
+  detail: string;
+  /** What goes between the brackets (link) or after `@` (citation). */
   insert: string;
+  kind: "link" | "citation";
 }
 
 interface Trigger {
+  kind: "link" | "citation";
   query: string;
   /** Textarea width when triggered, to keep the popup inside it. */
   width: number;
-  /** Index of the first `[` of `[[`. */
+  /** Where the replacement starts: the first `[` of `[[`, or just after `@`. */
   start: number;
   caret: number;
   top: number;
@@ -54,68 +60,97 @@ function caretPosition(el: HTMLTextAreaElement, pos: number) {
 }
 
 /**
- * `[[` autocomplete for the note textarea. Wire `onKeyDown` before the
- * editor's own handler and call `sync` after every change or caret move.
+ * `[[` note-link and `[@` citation autocomplete for the note textarea. Wire
+ * `onKeyDown` before the editor's own handler and call `sync` after every
+ * change or caret move.
  */
 export function useLinkAutocomplete(
   textareaRef: React.RefObject<HTMLTextAreaElement | null>,
   onInsert: (value: string, caret: number) => void,
 ) {
-  const { index } = useWorkspace();
+  const { index, references } = useWorkspace();
   const [trigger, setTrigger] = useState<Trigger | null>(null);
   const [active, setActive] = useState(0);
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
 
   const suggestions = useMemo<Suggestion[]>(() => {
-    if (!trigger || !index) return [];
-    const nameCounts = new Map<string, number>();
+    if (!trigger) return [];
+    const q = trigger.query.trim().toLowerCase();
+    const rankOf = (prefixFields: string[], containsFields: string[]) =>
+      !q ? 1 : prefixFields.some((h) => h.startsWith(q)) ? 0 : containsFields.some((h) => h.includes(q)) ? 1 : -1;
+
+    if (trigger.kind === "citation") {
+      return (references?.entries ?? [])
+        .map((e) => {
+          const names = [e.key, ...e.authors.map((a) => a.split(",")[0]), String(e.year ?? "")].map((h) => h.toLowerCase());
+          const suggestion: Suggestion = { id: e.key, label: `${e.inText} · @${e.key}`, detail: e.title, insert: e.key, kind: "citation" };
+          return { rank: rankOf(names, [...names, e.title.toLowerCase()]), suggestion };
+        })
+        .filter((c) => c.rank >= 0)
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, MAX_SUGGESTIONS)
+        .map((c) => c.suggestion);
+    }
+
+    if (!index) return [];
     const stem = (p: string) => {
       const base = p.slice(p.lastIndexOf("/") + 1);
       return isNotePath(base) ? base.slice(0, -3) : base;
     };
     const all = [...index.notes.map((n) => ({ path: n.path, title: n.title })), ...index.files.map((path) => ({ path, title: "" }))];
+    const nameCounts = new Map<string, number>();
     for (const f of all) nameCounts.set(stem(f.path).toLowerCase(), (nameCounts.get(stem(f.path).toLowerCase()) ?? 0) + 1);
 
-    const q = trigger.query.trim().toLowerCase();
     return all
       .map((f) => {
         const name = stem(f.path);
         const haystacks = [name.toLowerCase(), f.title.toLowerCase(), f.path.toLowerCase()];
-        const rank = !q ? 1 : haystacks.some((h) => h.startsWith(q)) ? 0 : haystacks.some((h) => h.includes(q)) ? 1 : -1;
         // Bare names when unique; otherwise the path keeps the link unambiguous.
         const unique = nameCounts.get(name.toLowerCase()) === 1;
         const insert = unique ? name : isNotePath(f.path) ? f.path.slice(0, -3) : f.path;
-        return { rank, notesFirst: isNotePath(f.path) ? 0 : 1, suggestion: { path: f.path, label: f.title || name, insert } };
+        const suggestion: Suggestion = { id: f.path, label: f.title || name, detail: f.path, insert, kind: "link" };
+        return { rank: rankOf(haystacks, haystacks), notesFirst: isNotePath(f.path) ? 0 : 1, suggestion };
       })
       .filter((c) => c.rank >= 0)
       .sort((a, b) => a.rank - b.rank || a.notesFirst - b.notesFirst)
       .slice(0, MAX_SUGGESTIONS)
       .map((c) => c.suggestion);
-  }, [trigger, index]);
+  }, [trigger, index, references]);
 
   const open = trigger !== null && suggestions.length > 0;
 
   function sync(el: HTMLTextAreaElement) {
     const caret = el.selectionStart;
-    const match = el.selectionEnd === caret ? el.value.slice(0, caret).match(OPEN_LINK_RE) : null;
+    const before = el.selectionEnd === caret ? el.value.slice(0, caret) : "";
+    const link = before.match(OPEN_LINK_RE);
+    const match = link ?? before.match(OPEN_CITATION_RE);
     if (!match) {
       setTrigger(null);
       return;
     }
-    const start = caret - match[1].length - 2;
+    const kind = link ? "link" : "citation";
+    const start = caret - match[1].length - (kind === "link" ? 2 : 0);
     if (start === dismissedAt) return;
     const { top, left } = caretPosition(el, caret);
     if (trigger?.start !== start) setActive(0);
-    setTrigger({ query: match[1], start, caret, top, left, width: el.clientWidth });
+    setTrigger({ kind, query: match[1], start, caret, top, left, width: el.clientWidth });
   }
 
   function accept(suggestion: Suggestion) {
     const el = textareaRef.current;
     if (!trigger || !el) return;
+    const before = el.value.slice(0, trigger.start);
     const after = el.value.slice(trigger.caret);
-    const rest = after.startsWith("]]") ? after.slice(2) : after;
-    const link = `[[${suggestion.insert}]]`;
-    onInsert(el.value.slice(0, trigger.start) + link + rest, trigger.start + link.length);
+    if (suggestion.kind === "link") {
+      const rest = after.startsWith("]]") ? after.slice(2) : after;
+      const link = `[[${suggestion.insert}]]`;
+      onInsert(before + link + rest, trigger.start + link.length);
+    } else {
+      // Close the bracket unless this citation already has one later on the line.
+      const unclosed = before.lastIndexOf("[") > before.lastIndexOf("]") && !after.split("\n")[0].includes("]");
+      const text = suggestion.insert + (unclosed ? "]" : "");
+      onInsert(before + text + after, trigger.start + text.length);
+    }
     setTrigger(null);
   }
 
@@ -143,12 +178,12 @@ export function useLinkAutocomplete(
 
   function popup() {
     if (!open) return null;
-    const width = 300;
+    const width = 320;
     const left = Math.max(8, Math.min(trigger!.left, trigger!.width - width - 8));
     return (
       <ul
         role="listbox"
-        aria-label="Link suggestions"
+        aria-label={trigger!.kind === "citation" ? "Citation suggestions" : "Link suggestions"}
         className="absolute z-20 max-h-72 overflow-y-auto rounded-lg border bg-popover p-1 text-sm shadow-lg"
         style={{ top: trigger!.top + 4, left, width }}
         // Keep focus in the textarea while clicking a suggestion.
@@ -156,17 +191,23 @@ export function useLinkAutocomplete(
       >
         {suggestions.map((s, i) => (
           <li
-            key={s.path}
+            key={s.id}
             role="option"
             aria-selected={i === active}
             onMouseEnter={() => setActive(i)}
             onClick={() => accept(s)}
             className={cn("flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5", i === active && "bg-muted")}
           >
-            <FileIcon ext={s.path.split(".").pop()?.toLowerCase()} />
+            {s.kind === "citation" ? (
+              <BookOpen className="size-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <FileIcon ext={s.id.split(".").pop()?.toLowerCase()} />
+            )}
             <span className="min-w-0 flex-1">
               <span className="block truncate">{s.label}</span>
-              <span className="block truncate font-mono text-xs text-muted-foreground">{s.path}</span>
+              <span className={cn("block truncate text-xs text-muted-foreground", s.kind === "link" && "font-mono")}>
+                {s.detail}
+              </span>
             </span>
           </li>
         ))}

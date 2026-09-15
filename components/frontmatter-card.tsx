@@ -146,8 +146,20 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
   );
 }
 
+// Lists whose items contain commas ("Love, Michael I") are edited with `;`
+// separators, so editing an author list can't split names apart.
+const listSeparator = (items: Scalar[]) => (items.some((v) => String(v).includes(",")) ? "; " : ", ");
+
+function splitList(draft: string, original: Scalar[]): string[] {
+  const separator = draft.includes(";") || listSeparator(original) === "; " ? ";" : ",";
+  return draft
+    .split(separator)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function formatValue(value: unknown): string {
-  if (isScalarList(value)) return value.join(", ");
+  if (isScalarList(value)) return value.join(listSeparator(value));
   if (isScalar(value)) return String(value);
   return "";
 }
@@ -169,7 +181,7 @@ function ExtraField({
 
   const commit = () => {
     if (draft === formatValue(value)) return;
-    if (Array.isArray(value)) onCommit(draft.split(",").map((s) => s.trim()).filter(Boolean));
+    if (isScalarList(value)) onCommit(splitList(draft, value));
     else if (typeof value === "number" && draft.trim() !== "" && !Number.isNaN(Number(draft))) onCommit(Number(draft));
     else if (typeof value === "boolean" && /^(true|false)$/i.test(draft)) onCommit(draft.toLowerCase() === "true");
     else onCommit(draft);
@@ -185,7 +197,7 @@ function ExtraField({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-            placeholder={Array.isArray(value) ? "comma, separated" : "—"}
+            placeholder={isScalarList(value) ? "comma, separated" : "—"}
             className="w-full rounded-md bg-transparent px-1 py-0.5 outline-none hover:bg-muted focus:bg-muted"
           />
         ) : (

@@ -87,7 +87,7 @@ function Snippet({ text }: { text: string }) {
   return (
     <>
       {tokenize(text).map((t, i) =>
-        typeof t === "string" || t.type === "tag" ? (
+        typeof t === "string" || t.type !== "wikilink" ? (
           <Fragment key={i}>{typeof t === "string" ? t : t.raw}</Fragment>
         ) : (
           <mark key={i} className="rounded bg-sky-100 px-0.5 text-sky-900 dark:bg-sky-950 dark:text-sky-200">
