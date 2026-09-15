@@ -1,0 +1,4 @@
+counts_path: data/counts.tsv
+output_path: results/log_cpm.tsv
+min_count: 10
+min_samples: 3

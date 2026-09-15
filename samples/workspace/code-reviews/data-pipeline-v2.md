@@ -1,0 +1,39 @@
+---
+title: Analysis of Data Pipeline V2
+type: code-review
+repo: pipelines
+commit: ""
+tags: [etl, python, optimization]
+date: 2026-09-15
+---
+
+# Analysis of Data Pipeline V2
+
+## Scope
+`pipelines/normalize_counts.py` and `pipelines/config.yaml`
+
+## Pipeline overview
+| Stage | Input | Output | Tool |
+|---|---|---|---|
+| Load | `counts.tsv` | DataFrame | pandas |
+| Filter | raw counts | expressed genes | `min_count` from config |
+| Normalise | filtered counts | log-CPM | numpy |
+
+## Correctness
+1. `filter_expressed` compares **log-CPM** values against `min_count: 10`, a raw-count threshold. $\log_2 \mathrm{CPM} \ge 10$ means CPM $\ge 1024$, so almost every gene is dropped.
+2. The filter runs after normalisation, so library sizes include genes that are later removed.
+
+Filter on raw counts first, then normalise:
+
+```python
+counts = counts.loc[(counts >= cfg["min_count"]).sum(axis=1) >= cfg["min_samples"]]
+cpm = counts / counts.sum(axis=0) * 1e6
+```
+
+## Reproducibility
+- [x] Parameters in config, not hard-coded
+- [ ] Versions pinned
+- [ ] Reference annotation version recorded
+
+## Performance
+`DataFrame.apply(..., axis=1)` over ~60k genes is $O(n \cdot m)$ in Python. The vectorised version above avoids the per-row overhead.
