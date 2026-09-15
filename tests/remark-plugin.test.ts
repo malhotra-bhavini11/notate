@@ -28,4 +28,12 @@ describe("remarkWikiTokens", () => {
       expect.objectContaining({ dataTag: "rna-seq" }),
     ]);
   });
+
+  it("turns accessions into external links", async () => {
+    const props = await anchors("Data: GSE60450, structure PDB 1TUP.");
+    expect(props).toEqual([
+      expect.objectContaining({ href: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE60450", dataAccession: "geo" }),
+      expect.objectContaining({ href: "https://www.rcsb.org/structure/1TUP", dataAccession: "pdb", dataAccessionId: "1TUP" }),
+    ]);
+  });
 });

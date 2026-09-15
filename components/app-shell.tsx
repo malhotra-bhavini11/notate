@@ -1,6 +1,6 @@
 "use client";
 
-import { BookPlus, Columns2, FileText, Hash, Library, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
+import { BookPlus, Columns2, Database, FileText, Hash, Library, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
@@ -13,7 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWorkspaceLocation } from "@/components/use-workspace-location";
 import { useWorkspace } from "@/components/workspace-provider";
-import { activePaths, referencesHref, splitToggleHref, tagHref, treeHrefFor, type WorkspaceLocation } from "@/lib/paths";
+import {
+  activePaths,
+  identifiersHref,
+  referencesHref,
+  splitToggleHref,
+  tagHref,
+  treeHrefFor,
+  type WorkspaceLocation,
+} from "@/lib/paths";
 import { cn } from "@/lib/utils";
 
 const NARROW_QUERY = "(max-width: 767px)";
@@ -121,6 +129,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Hash className="size-4 text-muted-foreground" />
             Tags
             {index && <span className="ml-auto text-xs text-muted-foreground tabular-nums">{index.tags.length}</span>}
+          </Link>
+          <Link
+            href={identifiersHref}
+            onClick={closeIfNarrow}
+            title="Identifiers: datasets, genes, proteins, and other database IDs in your notes"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+          >
+            <Database className="size-4 text-muted-foreground" />
+            IDs
           </Link>
         </div>
 
@@ -246,6 +263,8 @@ function LocationCrumbs({ location }: { location: WorkspaceLocation }) {
       return <span className="text-sm text-muted-foreground">Dashboard</span>;
     case "references":
       return <span className="text-sm text-muted-foreground">References</span>;
+    case "identifiers":
+      return <span className="text-sm text-muted-foreground">Identifiers</span>;
     case "tags":
       return (
         <span className="truncate text-sm text-muted-foreground">

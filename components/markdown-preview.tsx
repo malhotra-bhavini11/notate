@@ -14,6 +14,7 @@ import type { PluggableList } from "unified";
 import { CodeBlock } from "@/components/code-block";
 import { useNoteLinks } from "@/components/use-note-links";
 import { useWorkspace } from "@/components/workspace-provider";
+import { ACCESSION_TYPE_BY_KEY } from "@/lib/accessions";
 import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
 import { extractLinksAndTags, parseCitation, remarkWikiTokens } from "@/lib/markdown-tokens";
 import { noteHref, referencesHref, tagHref } from "@/lib/paths";
@@ -39,6 +40,20 @@ const COMPONENTS: Components = {
     const properties = node?.properties ?? {};
     if (typeof properties.dataWikilink === "string") {
       return <WikiLink target={properties.dataWikilink}>{children}</WikiLink>;
+    }
+    if (typeof properties.dataAccession === "string") {
+      const type = ACCESSION_TYPE_BY_KEY.get(properties.dataAccession);
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="accession-link"
+          title={type ? `${type.name} · ${type.description}` : undefined}
+        >
+          {children}
+        </a>
+      );
     }
     if (typeof properties.dataCitation === "string") {
       return <Citation inner={properties.dataCitation}>{children}</Citation>;

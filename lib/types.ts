@@ -31,6 +31,8 @@ export interface NoteSummary {
   citations: string[];
   /** Frontmatter `citekey`, set on reading notes created from a reference. */
   citekey?: string;
+  /** Database identifiers mentioned in the body, as `database:id` (e.g. `geo:GSE60450`). */
+  accessions: string[];
   mtime: number;
 }
 

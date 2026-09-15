@@ -50,6 +50,23 @@ describe("citations", () => {
   });
 });
 
+describe("accessions in notes", () => {
+  it("are found in prose but not in code, math, links, wikilinks, citations, or tags", () => {
+    const { accessions, links, tags } = extractLinksAndTags(
+      [
+        "Counts from GSE60450 (runs SRR1552450); p53 is P04637 and TP53 is ENSG00000141510.",
+        "",
+        "`GSE11111` and ```GSE22222``` inline, $GSE33333$ math, [GSE44444](https://example.org) link.",
+        "",
+        "[[GSE55555]] note link, [@GSE66666] citation, #GSE77777 tag.",
+      ].join("\n"),
+    );
+    expect(accessions).toEqual(["geo:GSE60450", "sra:SRR1552450", "uniprot:P04637", "ensembl:ENSG00000141510"]);
+    expect(links.map((l) => l.target)).toEqual(["GSE55555"]);
+    expect(tags).toEqual(["gse77777"]);
+  });
+});
+
 describe("extractLinksAndTags", () => {
   const body = [
     "# Heading is not a tag",

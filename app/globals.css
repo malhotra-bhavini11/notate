@@ -19,6 +19,9 @@
 .citation-missing {
   @apply text-destructive underline decoration-dashed;
 }
+.accession-link {
+  @apply font-mono text-[0.9em] text-emerald-700 underline decoration-emerald-700/30 decoration-dotted underline-offset-2 hover:decoration-solid dark:text-emerald-400;
+}
 /* Shiki code blocks (components/code-block.tsx). Lines become grid rows so
    highlight and diff backgrounds span the full width; the "\n" text nodes
    between lines are whitespace-only and don't render as grid items. */

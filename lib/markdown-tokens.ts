@@ -1,6 +1,6 @@
-// `[[wikilinks]]` and `#tags`: one tokenizer shared by the preview (as a remark
-// plugin) and the server-side link index, so what renders as a link is exactly
-// what counts as a backlink. Pure module: safe on client and server.
+// `[[wikilinks]]`, `[@citations]`, `#tags`, and database accessions: one tokenizer
+// shared by the preview (as a remark plugin) and the server-side index, so what
+// renders as a link is exactly what the index counts. Pure: safe on client and server.
 
 import type { Link, Nodes, Parent, Root, Text } from "mdast";
 import remarkGfm from "remark-gfm";
@@ -8,6 +8,8 @@ import remarkMath from "remark-math";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { SKIP, visitParents } from "unist-util-visit-parents";
+
+import { accessionRef, findAccessions } from "./accessions";
 
 export interface WikiLinkToken {
   type: "wikilink";
@@ -41,7 +43,16 @@ export interface CitationToken {
   items: CitationItem[];
 }
 
-export type Token = string | WikiLinkToken | TagToken | CitationToken;
+export interface AccessionToken {
+  type: "accession";
+  raw: string;
+  /** Registry key from lib/accessions, e.g. `geo`. */
+  database: string;
+  id: string;
+  url: string;
+}
+
+export type Token = string | WikiLinkToken | TagToken | CitationToken | AccessionToken;
 
 // Alternatives, in order: [[wikilink]] | [@pandoc; @citation] | #tag.
 // A tag needs a non-word character (or line start) before `#`, so URL
@@ -83,8 +94,27 @@ export function normalizeTag(tag: string): string {
   return tag.replace(/^#/, "").replace(/[/-]+$/, "").toLowerCase();
 }
 
-/** Splits plain text into strings and link/tag tokens. */
+/** Splits plain text into strings and link, citation, tag, and accession tokens. */
 export function tokenize(text: string): Token[] {
+  // Accessions are found in what's left, so `[[GSE60450]]` stays a wikilink.
+  return tokenizeMarkup(text).flatMap((part) => (typeof part === "string" ? splitAccessions(part) : [part]));
+}
+
+function splitAccessions(text: string): Token[] {
+  const matches = findAccessions(text);
+  if (matches.length === 0) return [text];
+  const out: Token[] = [];
+  let last = 0;
+  for (const m of matches) {
+    if (m.start > last) out.push(text.slice(last, m.start));
+    out.push({ type: "accession", raw: m.raw, database: m.type.key, id: m.id, url: m.url });
+    last = m.start + m.raw.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+function tokenizeMarkup(text: string): Token[] {
   const out: Token[] = [];
   let last = 0;
   for (const match of text.matchAll(TOKEN_RE)) {
@@ -127,13 +157,22 @@ function visitTokens(tree: Root, visitor: TokenVisitor) {
 
 /**
  * Remark plugin: turns tokens into `link` nodes carrying data attributes that
- * the preview's `<a>` renderer resolves (`dataWikilink`, `dataTag`, `dataCitation`).
+ * the preview's `<a>` renderer resolves (`dataWikilink`, `dataTag`,
+ * `dataCitation`). Accessions become ordinary external links tagged `dataAccession`.
  */
 export function remarkWikiTokens() {
   return (tree: Root) => {
     visitTokens(tree, (tokens, node, parent) => {
       const replacement: Nodes[] = tokens.map((t): Nodes => {
         if (typeof t === "string") return { type: "text", value: t };
+        if (t.type === "accession") {
+          return {
+            type: "link",
+            url: t.url,
+            children: [{ type: "text", value: t.raw }],
+            data: { hProperties: { dataAccession: t.database, dataAccessionId: t.id } },
+          };
+        }
         // hast property names are camelCase; they render as data-* attributes.
         const [label, hProperties] =
           t.type === "tag"
@@ -167,13 +206,22 @@ export interface ExtractedLink {
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 const MAX_CONTEXT = 240;
 
-/** Outgoing wikilinks, inline tags, and cited keys of a note body. */
-export function extractLinksAndTags(content: string): { links: ExtractedLink[]; tags: string[]; citations: string[] } {
+export interface ExtractedTokens {
+  links: ExtractedLink[];
+  tags: string[];
+  citations: string[];
+  /** `database:id` refs, e.g. `geo:GSE60450`. */
+  accessions: string[];
+}
+
+/** Outgoing wikilinks, inline tags, cited keys, and accessions of a note body. */
+export function extractLinksAndTags(content: string): ExtractedTokens {
   const tree = parser.parse(content);
   const lines = content.split(/\r?\n/);
   const links: ExtractedLink[] = [];
   const tags = new Set<string>();
   const citations = new Set<string>();
+  const accessions = new Set<string>();
 
   visitTokens(tree, (tokens, node) => {
     let offset = 0;
@@ -184,6 +232,8 @@ export function extractLinksAndTags(content: string): { links: ExtractedLink[]; 
       }
       if (t.type === "tag") {
         tags.add(t.tag);
+      } else if (t.type === "accession") {
+        accessions.add(accessionRef({ type: { key: t.database }, id: t.id }));
       } else if (t.type === "citation") {
         for (const item of t.items) citations.add(item.key);
       } else {
@@ -202,5 +252,5 @@ export function extractLinksAndTags(content: string): { links: ExtractedLink[]; 
     }
   });
 
-  return { links, tags: [...tags], citations: [...citations] };
+  return { links, tags: [...tags], citations: [...citations], accessions: [...accessions] };
 }

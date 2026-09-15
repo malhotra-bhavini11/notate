@@ -28,6 +28,17 @@ Everything here is a plain Markdown file in the `workspace/` folder. Edit notes 
 - Cite with `[@key]`, `[@key, p. 3]`, or `[@a; @b]`. Type `[@` for suggestions. For example, DESeq2 [@love2014moderated] and transformers [@vaswani2017attention].
 - The preview ends with a formatted **References** list. The References page shows every entry and the notes that cite it.
 
+## Database identifiers
+Accessions link to their database automatically:
+- **Datasets:** GSE60450, SRA, ENA, BioProject, ArrayExpress, dbGaP, EGA
+- **Genes and proteins:** ENSG00000141510 (TP53), UniProt P04637, PDB 1TUP, InterPro, Pfam
+- **Variants:** dbSNP rs334, ClinVar
+- **Ontologies:** GO:0006915, CL, HP, MONDO
+- **Trials:** NCT04368728
+- **Literature:** DOIs, PMIDs, arXiv IDs
+
+Short or ambiguous IDs need a prefix, e.g. `PDB 1TUP`, `PMID: 25516281`, `taxid:9606`. **IDs** in the sidebar lists every identifier and the notes that mention it.
+
 ## Markdown features
 | Feature | Syntax |
 |---|---|

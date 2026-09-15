@@ -23,6 +23,8 @@ interface IndexedNote {
   citations: string[];
   /** Frontmatter `citekey`: this note is the reading note for that reference. */
   citekey?: string;
+  /** `database:id` refs for accessions mentioned in the body. */
+  accessions: string[];
   mtime: number;
 }
 
@@ -40,7 +42,7 @@ async function indexNote(root: string, relPath: string, mtime: number): Promise<
   } catch {
     // Malformed YAML: still index links in the body so the note isn't invisible.
   }
-  const { links, tags, citations } = extractLinksAndTags(content);
+  const { links, tags, citations, accessions } = extractLinksAndTags(content);
   // Report file line numbers (as in any other editor), not body-relative ones.
   const bodyOffset = raw.endsWith(content) ? raw.slice(0, raw.length - content.length).split("\n").length - 1 : 0;
   for (const link of links) link.line += bodyOffset;
@@ -52,6 +54,7 @@ async function indexNote(root: string, relPath: string, mtime: number): Promise<
     links,
     citations,
     citekey: typeof frontmatter.citekey === "string" && frontmatter.citekey.trim() ? frontmatter.citekey.trim() : undefined,
+    accessions,
     mtime,
   };
 }
@@ -102,7 +105,16 @@ export async function getIndexDTO(): Promise<IndexDTO> {
 
   return {
     notes: notes
-      .map(({ path, title, type, tags, citations, citekey, mtime }) => ({ path, title, type, tags, citations, citekey, mtime }))
+      .map(({ path, title, type, tags, citations, citekey, accessions, mtime }) => ({
+        path,
+        title,
+        type,
+        tags,
+        citations,
+        citekey,
+        accessions,
+        mtime,
+      }))
       .sort((a, b) => b.mtime - a.mtime),
     files: files.filter((f) => f.ext !== "md").map((f) => f.path),
     tags: [...counts].map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)),

@@ -64,6 +64,25 @@ Citing and browsing:
 - **`/references`:** lists every entry with its identifiers, reading note, the notes citing it, and copy buttons for the key and the BibTeX entry.
 - **Removing entries:** edit `references.bib` directly.
 
+## Database identifiers
+
+Accessions in note text link to their database automatically in the preview. The patterns live in `lib/accessions.ts`.
+
+| Kind | Examples |
+|---|---|
+| Sequencing & expression | `GSE60450`, `SRR1552450`, `ERR000001`, `PRJNA257197`, `SAMN02981297`, `E-MTAB-513`, `phs000178`, `EGAS00001000001` |
+| Genes & sequences | `ENSG00000141510`, `NM_000546.6`, `MN908947.3` (versioned GenBank), `GCF_000001405.40`, `Gene ID: 7157`, `HGNC:11998` |
+| Proteins & structures | `P04637`, `AF-P04637-F1`, `PDB 1TUP`, `IPR011615`, `PF00870` |
+| Variants & clinical | `rs334`, `VCV000015333`, `OMIM:191170`, `NCT04368728`, `CVCL_0030` |
+| Ontologies, pathways & chemistry | `GO:0006915`, `HP:`/`MONDO:`/`UBERON:`/`CL:`/`DOID:`/`EFO:` terms, `R-HSA-109581`, `MeSH D003920`, `taxid:9606`, `CHEBI:15377`, `CHEMBL25` |
+| Literature | `doi:10.…` or bare DOIs, `PMID: 25516281`, `PMC4302049`, `arXiv:1706.03762` |
+
+How matching works:
+- **Precision over recall:** PDB codes, NCBI Gene/Taxonomy numbers, OMIM, MeSH and PubMed IDs need a prefix. That keeps years, gene symbols (BRCA1, CD4) and version numbers from linking.
+- **Where IDs don't link:** inside code, math, links, `[[wikilinks]]`, citations and tags.
+- **Frontmatter:** values that are identifiers get a link icon. Bare values count too when the field name says what they are (`pmid`, `arxiv`, `pdb`, `taxid`, `gene_id`).
+- **`/identifiers`:** lists every ID across notes, grouped by kind, with the notes that mention it.
+
 ## Code blocks
 
 Fenced code in notes is highlighted with Shiki (`github-dark-default`) and gets a header with the language or title and a **Copy** button.

@@ -12,6 +12,8 @@ date: 2026-09-15
 ## Scope
 `pipelines/normalize_counts.py` and `pipelines/config.yaml`
 
+Test data: GEO series GSE60450 (mouse mammary gland RNA-seq). Genes are keyed by Ensembl IDs, e.g. ENSMUSG00000059552 (*Trp53*).
+
 ## Pipeline overview
 | Stage | Input | Output | Tool |
 |---|---|---|---|

@@ -1,11 +1,12 @@
 "use client";
 
-import { Calendar, Hash, Plus, Shapes, X } from "lucide-react";
+import { Calendar, ExternalLink, Hash, Plus, Shapes, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { accessionForField } from "@/lib/accessions";
 import { tagHref } from "@/lib/paths";
 import { NOTE_TEMPLATES } from "@/lib/templates";
 import type { Frontmatter } from "@/lib/types";
@@ -177,6 +178,8 @@ function ExtraField({
   onRemove: () => void;
 }) {
   const editable = value === null || isScalar(value) || isScalarList(value);
+  // `doi: 10.1186/…` or `geo: GSE60450` get a link to the database.
+  const accession = accessionForField(name, value);
   const [draft, setDraft] = useState(formatValue(value));
 
   const commit = () => {
@@ -190,16 +193,30 @@ function ExtraField({
   return (
     <>
       <dt className="font-mono text-xs text-muted-foreground">{name}</dt>
-      <dd className="min-w-0">
+      <dd className="flex min-w-0 items-center gap-1">
         {editable ? (
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-            placeholder={isScalarList(value) ? "comma, separated" : "—"}
-            className="w-full rounded-md bg-transparent px-1 py-0.5 outline-none hover:bg-muted focus:bg-muted"
-          />
+          <>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
+              placeholder={isScalarList(value) ? "comma, separated" : "—"}
+              className="w-full min-w-0 rounded-md bg-transparent px-1 py-0.5 outline-none hover:bg-muted focus:bg-muted"
+            />
+            {accession && (
+              <a
+                href={accession.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`Open ${accession.id} in ${accession.type.name}`}
+                title={`Open in ${accession.type.name}`}
+                className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <ExternalLink className="size-3.5" />
+              </a>
+            )}
+          </>
         ) : (
           <code className="block truncate px-1 text-xs" title={JSON.stringify(value)}>
             {JSON.stringify(value)}
