@@ -2,20 +2,26 @@
 
 import "katex/dist/katex.min.css";
 
+import rehypeShikiFromHighlighter from "@shikijs/rehype/core";
 import Link from "next/link";
-import { createContext, useContext } from "react";
+import { createContext, Suspense, use, useContext, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import type { PluggableList } from "unified";
 
+import { CodeBlock } from "@/components/code-block";
 import { useNoteLinks } from "@/components/use-note-links";
 import { useWorkspace } from "@/components/workspace-provider";
+import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
 import { remarkWikiTokens } from "@/lib/markdown-tokens";
 import { tagHref } from "@/lib/paths";
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens];
-const REHYPE_PLUGINS = [rehypeKatex];
+// KaTeX first: display math also arrives as <pre><code class="language-math">,
+// and the highlighter must not turn equations into code blocks.
+const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeCodeFence];
 
 interface MarkdownPreviewProps {
   content: string;
@@ -23,8 +29,8 @@ interface MarkdownPreviewProps {
   fromPath?: string;
 }
 
-// The renderer below must keep a stable identity (a new function per render
-// would remount every link), so the note path reaches it through context.
+// The renderers below must keep a stable identity (a new function per render
+// would remount every link), so the note path reaches them through context.
 const FromPathContext = createContext<string | undefined>(undefined);
 
 const COMPONENTS: Components = {
@@ -47,19 +53,70 @@ const COMPONENTS: Components = {
       </a>
     );
   },
+  pre({ node, children, ...props }) {
+    const properties = node?.properties ?? {};
+    return (
+      <CodeBlock
+        {...props}
+        language={typeof properties.dataLanguage === "string" ? properties.dataLanguage : undefined}
+        title={typeof properties.dataTitle === "string" ? properties.dataTitle : undefined}
+        lineNumbers={properties.dataLineNumbers !== undefined}
+      >
+        {children}
+      </CodeBlock>
+    );
+  },
 };
+
+const PROSE =
+  "prose prose-neutral max-w-none dark:prose-invert prose-headings:scroll-mt-4 prose-code:before:content-none prose-code:after:content-none prose-table:text-sm prose-th:border prose-th:bg-muted prose-th:px-2 prose-th:py-1 prose-td:border prose-td:px-2 prose-td:py-1";
 
 // Raw HTML in notes is intentionally not rendered (no rehype-raw), so a pasted
 // snippet can never run script inside the app.
 export function MarkdownPreview({ content, fromPath }: MarkdownPreviewProps) {
   return (
     <FromPathContext.Provider value={fromPath}>
-      <article className="prose prose-neutral max-w-none dark:prose-invert prose-headings:scroll-mt-4 prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-code:before:content-none prose-code:after:content-none prose-table:text-sm prose-th:border prose-th:bg-muted prose-th:px-2 prose-th:py-1 prose-td:border prose-td:px-2 prose-td:py-1">
-        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={COMPONENTS}>
-          {content}
-        </ReactMarkdown>
+      <article className={PROSE}>
+        {/* Renders immediately without colours, then re-renders once grammars load. */}
+        <Suspense fallback={<MarkdownBody content={content} rehypePlugins={BASE_REHYPE_PLUGINS} />}>
+          <HighlightedMarkdownBody content={content} />
+        </Suspense>
       </article>
     </FromPathContext.Provider>
+  );
+}
+
+function HighlightedMarkdownBody({ content }: { content: string }) {
+  const highlighter = use(loadHighlighter());
+  const plugins = useMemo<PluggableList>(
+    () =>
+      highlighter
+        ? [
+            ...BASE_REHYPE_PLUGINS,
+            [
+              rehypeShikiFromHighlighter,
+              highlighter,
+              {
+                theme: CODE_THEME,
+                transformers: CODE_TRANSFORMERS,
+                // Unfenced blocks and unknown languages still get the code-block treatment.
+                defaultLanguage: "text",
+                fallbackLanguage: "text",
+                onError: (err: unknown) => console.warn("[highlighter]", err),
+              },
+            ],
+          ]
+        : BASE_REHYPE_PLUGINS,
+    [highlighter],
+  );
+  return <MarkdownBody content={content} rehypePlugins={plugins} />;
+}
+
+function MarkdownBody({ content, rehypePlugins }: { content: string; rehypePlugins: PluggableList }) {
+  return (
+    <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={rehypePlugins} components={COMPONENTS}>
+      {content}
+    </ReactMarkdown>
   );
 }
 

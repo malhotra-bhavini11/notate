@@ -25,10 +25,17 @@ date: 2026-09-15
 
 Filter on raw counts first, then normalise:
 
-```python
-counts = counts.loc[(counts >= cfg["min_count"]).sum(axis=1) >= cfg["min_samples"]]
-cpm = counts / counts.sum(axis=0) * 1e6
+```python title="pipelines/normalize_counts.py" showLineNumbers
+def main() -> None:
+    cfg = load_config(Path(__file__).with_name("config.yaml"))
+    counts = pd.read_csv(cfg["counts_path"], sep="\t", index_col=0)
+    normalised = filter_expressed(log_cpm(counts), cfg["min_count"], cfg["min_samples"])  # [!code --]
+    expressed = (counts >= cfg["min_count"]).sum(axis=1) >= cfg["min_samples"]  # [!code ++]
+    normalised = log_cpm(counts.loc[expressed])  # [!code ++]
+    normalised.to_csv(cfg["output_path"], sep="\t")
 ```
+
+Diff lines use `# [!code ++]` / `# [!code --]`. Highlight lines with `{2-3}` after the language.
 
 ## Reproducibility
 - [x] Parameters in config, not hard-coded

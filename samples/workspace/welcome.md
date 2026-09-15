@@ -30,6 +30,8 @@ Everything here is a plain Markdown file in the `workspace/` folder. Edit notes 
 | Display math | `$$ ... $$` |
 | Tables | GitHub-flavoured pipes |
 | Task lists | `- [ ] todo` |
+| Code blocks | ` ```python title="qc.py" showLineNumbers {2-3} ` |
+| Diff / highlight a line | `# [!code ++]`, `# [!code --]`, `# [!code highlight]` at the end of the line |
 
 $$
 \hat{\beta} = (X^\top X)^{-1} X^\top y

@@ -40,6 +40,26 @@ The pdf.js worker, fonts, cmaps and wasm are copied from `node_modules` into `pu
 - **Tags:** `#tag` or nested `#bio/rna-seq` inline, plus frontmatter `tags:`. `/tags/bio` includes nested `bio/*` tags. Numbers-only tags like `#42` are ignored.
 - **Ignored contexts:** links and tags inside code blocks, inline code, math and URLs don't count. In tables, escape the alias pipe: `[[note\|text]]`.
 
+## Code blocks
+
+Fenced code in notes is highlighted with Shiki (`github-dark-default`) and gets a header with the language or title and a **Copy** button.
+
+````markdown
+```python title="qc.py" showLineNumbers {2}
+counts = load_counts()
+keep = counts.sum(axis=1) >= 10
+counts = counts[keep]  # [!code ++]
+counts = counts.dropna()  # [!code --]
+```
+````
+
+- **Fence options:** `title="…"`, `showLineNumbers` and `{1,3-5}` (highlight lines).
+- **Inline markers:** `// [!code highlight]`, `// [!code ++]` and `// [!code --]`, written with the language's own comment syntax.
+- **Copy:** leaves out `--` lines, so you get the "after" version.
+- **Languages:** Python, R, Julia, MATLAB, shell, SQL, Nextflow, YAML/JSON/TOML/XML/CSV, LaTeX, JS/TS, C/C++, Rust, Go, Java, Fortran, Docker, Make, CMake, diff and more. `snakemake`, `rscript` and `console` map to the nearest grammar; unknown languages render as plain text.
+- **Code viewer:** the same highlighter colours files up to 8,000 lines. Larger files stay plain so the tab doesn't freeze.
+- **Loading:** grammars load on first use, as separate chunks.
+
 ## API
 
 | Route | Description |
