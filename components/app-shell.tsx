@@ -211,6 +211,12 @@ function LocationCrumbs({ location }: { location: WorkspaceLocation }) {
   switch (location.mode) {
     case "dashboard":
       return <span className="text-sm text-muted-foreground">Dashboard</span>;
+    case "tags":
+      return (
+        <span className="truncate text-sm text-muted-foreground">
+          Tags{location.tag && <span className="text-foreground"> / #{location.tag}</span>}
+        </span>
+      );
     case "note":
       return <PathCrumbs path={location.note} />;
     case "file":

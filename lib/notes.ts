@@ -4,11 +4,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { parseMarkdown, stringifyMarkdown } from "./frontmatter";
-import { buildTree } from "./tree";
-import { flattenTree } from "./tree-utils";
-import { isPlainObject, toTags } from "./values";
+import { getIndexDTO } from "./link-index";
 import type { NoteDTO, NoteSummary, SaveNoteBody, SaveNoteResponse } from "./types";
-import { ensureWorkspace, resolveInWorkspace, WorkspaceError, writeFileAtomic } from "./workspace";
+import { isPlainObject } from "./values";
+import { resolveInWorkspace, WorkspaceError, writeFileAtomic } from "./workspace";
 
 /** Upper bound for a single note; markdown this large is almost certainly a mistake. */
 export const MAX_NOTE_BYTES = 5 * 1024 * 1024;
@@ -72,31 +71,7 @@ export async function writeNote(segments: string[], body: SaveNoteBody): Promise
   return { ok: true, path: relative, mtime: stat.mtimeMs };
 }
 
-/** Most recently modified notes, with the frontmatter fields the dashboard shows. */
+/** Most recently modified notes, with title, type, and tags (frontmatter + inline). */
 export async function listRecentNotes(limit = 20): Promise<NoteSummary[]> {
-  const root = await ensureWorkspace();
-  const files = flattenTree(await buildTree(root))
-    .filter((f) => f.ext === "md")
-    .sort((a, b) => b.mtime - a.mtime)
-    .slice(0, limit);
-
-  return Promise.all(
-    files.map(async (file): Promise<NoteSummary> => {
-      const fallbackTitle = file.name.replace(/\.md$/i, "");
-      try {
-        const raw = await fs.readFile(path.join(root, ...file.path.split("/")), "utf8");
-        const { frontmatter } = parseMarkdown(raw);
-        return {
-          path: file.path,
-          title: typeof frontmatter.title === "string" ? frontmatter.title : fallbackTitle,
-          type: typeof frontmatter.type === "string" ? frontmatter.type : undefined,
-          tags: toTags(frontmatter.tags),
-          mtime: file.mtime,
-        };
-      } catch {
-        // Malformed YAML shouldn't hide the note from the dashboard.
-        return { path: file.path, title: fallbackTitle, tags: [], mtime: file.mtime };
-      }
-    }),
-  );
+  return (await getIndexDTO()).notes.slice(0, limit);
 }

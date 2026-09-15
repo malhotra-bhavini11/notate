@@ -1,9 +1,11 @@
 "use client";
 
 import { Check, CircleAlert, Eye, LoaderCircle, Pencil } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { BacklinksPanel } from "@/components/backlinks-panel";
 import { FrontmatterCard } from "@/components/frontmatter-card";
+import { useLinkAutocomplete } from "@/components/link-autocomplete";
 import { MarkdownPreview } from "@/components/markdown-preview";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -128,6 +130,21 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
     [save],
   );
 
+  // [[ autocomplete rewrites the content, then restores the caret after React renders it.
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pendingCaret = useRef<number | null>(null);
+  const autocomplete = useLinkAutocomplete(textareaRef, (content, caret) => {
+    pendingCaret.current = caret;
+    update({ content });
+  });
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (el && pendingCaret.current !== null) {
+      el.setSelectionRange(pendingCaret.current, pendingCaret.current);
+      pendingCaret.current = null;
+    }
+  }, [doc.content]);
+
   // Warn before closing the tab with unsaved edits; flush pending edits when navigating away in-app.
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -205,23 +222,42 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
       </div>
 
       {mode === "write" ? (
-        <textarea
-          value={doc.content}
-          onChange={(e) => update({ content: e.target.value })}
-          spellCheck
-          aria-label="Note body (Markdown)"
-          placeholder="Write in Markdown. $inline math$, $$display math$$, | tables |, ```code```"
-          className="min-h-[60vh] w-full flex-1 resize-none rounded-xl border bg-background p-4 font-mono text-sm leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-        />
+        <div className="relative flex flex-1 flex-col">
+          <textarea
+            ref={textareaRef}
+            value={doc.content}
+            onChange={(e) => {
+              update({ content: e.target.value });
+              autocomplete.sync(e.target);
+            }}
+            onKeyDown={(e) => {
+              autocomplete.onKeyDown(e);
+            }}
+            onKeyUp={(e) => {
+              if (e.key.startsWith("Arrow") && !autocomplete.open) autocomplete.sync(e.currentTarget);
+            }}
+            onClick={(e) => autocomplete.sync(e.currentTarget)}
+            onBlur={autocomplete.close}
+            onScroll={autocomplete.close}
+            spellCheck
+            aria-label="Note body (Markdown)"
+            aria-autocomplete="list"
+            placeholder="Write in Markdown. [[Link a note]], #tags, $inline math$, | tables |, ```code```"
+            className="min-h-[60vh] w-full flex-1 resize-none rounded-xl border bg-background p-4 font-mono text-sm leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+          />
+          {autocomplete.popup()}
+        </div>
       ) : (
         <div className="min-h-[60vh] rounded-xl border p-6">
           {doc.content.trim() ? (
-            <MarkdownPreview content={doc.content} />
+            <MarkdownPreview content={doc.content} fromPath={path} />
           ) : (
             <p className="text-sm text-muted-foreground">Nothing to preview.</p>
           )}
         </div>
       )}
+
+      <BacklinksPanel path={path} />
     </div>
   );
 }

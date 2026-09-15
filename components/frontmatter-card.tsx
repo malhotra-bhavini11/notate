@@ -1,10 +1,12 @@
 "use client";
 
 import { Calendar, Hash, Plus, Shapes, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { tagHref } from "@/lib/paths";
 import { NOTE_TEMPLATES } from "@/lib/templates";
 import type { Frontmatter } from "@/lib/types";
 import { toTags } from "@/lib/values";
@@ -111,7 +113,9 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string
       <Hash className="size-3.5 text-muted-foreground" />
       {tags.map((tag) => (
         <Badge key={tag} variant="outline" className="gap-0.5 pr-0.5">
-          {tag}
+          <Link href={tagHref(tag)} className="hover:underline" title={`Notes tagged #${tag}`}>
+            {tag}
+          </Link>
           <button
             type="button"
             onClick={() => onChange(tags.filter((t) => t !== tag))}

@@ -17,3 +17,5 @@ The `source` field above links this note to `papers/notate-sample.pdf`. Press **
 $$
 \operatorname{Var}(K) = \mu + \alpha \mu^2
 $$
+
+This is the negative binomial variance used in [[deseq2-love-2014|DESeq2]]. #stats

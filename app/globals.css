@@ -4,6 +4,19 @@
 
 @plugin "@tailwindcss/typography";
 
+/* [[wikilinks]] and #tags rendered in note previews. Deliberately unlayered:
+   the typography plugin's link styles live in the utilities layer and would
+   otherwise win. */
+.wikilink {
+  @apply rounded-sm font-medium text-sky-700 no-underline decoration-sky-700/40 underline-offset-2 hover:underline dark:text-sky-400;
+}
+.wikilink-missing {
+  @apply cursor-pointer text-muted-foreground underline decoration-dashed hover:text-foreground;
+}
+.tag-link {
+  @apply rounded-full bg-muted px-1.5 py-0.5 text-[0.85em] font-medium text-muted-foreground no-underline hover:bg-accent hover:text-foreground;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

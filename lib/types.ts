@@ -30,6 +30,20 @@ export interface NoteSummary {
   mtime: number;
 }
 
+export interface IndexDTO {
+  /** Every note, newest first. Tags include frontmatter and inline `#tags`. */
+  notes: NoteSummary[];
+  /** Non-note files (PDFs, code, data) that `[[file.ext]]` links can target. */
+  files: string[];
+  tags: { tag: string; count: number }[];
+}
+
+export interface BacklinkDTO {
+  path: string;
+  title: string;
+  mentions: { line: number; context: string }[];
+}
+
 export interface SaveNoteBody {
   frontmatter?: Frontmatter;
   content: string;

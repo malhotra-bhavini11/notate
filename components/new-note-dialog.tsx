@@ -46,7 +46,7 @@ function NewNoteForm({ request, onDone }: { request: NewNoteRequest; onDone: () 
   const initialTemplate = getTemplate(request.templateId ?? "paper-review");
   const [templateId, setTemplateId] = useState(initialTemplate.id);
   const [title, setTitle] = useState(request.title ?? "");
-  const [folder, setFolder] = useState(initialTemplate.folder);
+  const [folder, setFolder] = useState(request.folder ?? initialTemplate.folder);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 

@@ -6,6 +6,9 @@ export const noteHref = (p: string) => `/notes/${encodePath(p)}`;
 export const fileHref = (p: string) => `/files/${encodePath(p)}`;
 export const noteApiUrl = (p: string) => `/api/notes/${encodePath(p)}`;
 export const rawFileUrl = (p: string) => `/api/files/raw/${encodePath(p)}`;
+export const backlinksApiUrl = (p: string) => `/api/backlinks/${encodePath(p)}`;
+/** `/tags` for the tag index, `/tags/bio/rna-seq` for one (nested) tag. */
+export const tagHref = (tag?: string) => (tag ? `/tags/${encodePath(tag)}` : "/tags");
 
 export const isNotePath = (p: string) => p.toLowerCase().endsWith(".md");
 export const isPdfPath = (p: string) => p.toLowerCase().endsWith(".pdf");
@@ -34,6 +37,7 @@ export function splitHref({ file, note }: SplitTarget): string {
 
 export type WorkspaceLocation =
   | { mode: "dashboard" }
+  | { mode: "tags"; tag: string | null }
   | { mode: "note"; note: string }
   | { mode: "file"; file: string }
   | { mode: "split"; file: string | null; note: string | null };
@@ -43,6 +47,8 @@ export function parseLocation(pathname: string, search: URLSearchParams): Worksp
   if (pathname === "/split") {
     return { mode: "split", file: search.get("file") || null, note: search.get("note") || null };
   }
+  const tagMatch = pathname.match(/^\/tags(?:\/(.+))?$/);
+  if (tagMatch) return { mode: "tags", tag: tagMatch[1] ? joinSlug(tagMatch[1].split("/")) : null };
   const match = pathname.match(/^\/(notes|files)\/(.+)$/);
   if (!match) return { mode: "dashboard" };
   const path = joinSlug(match[2].split("/"));
@@ -63,6 +69,7 @@ export function splitToggleHref(location: WorkspaceLocation): string {
     case "file":
       return splitHref({ file: location.file });
     case "dashboard":
+    case "tags":
       return splitHref({});
     case "split":
       if (location.note) return noteHref(location.note);

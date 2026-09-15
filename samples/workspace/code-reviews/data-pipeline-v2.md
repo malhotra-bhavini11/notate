@@ -35,5 +35,8 @@ cpm = counts / counts.sum(axis=0) * 1e6
 - [ ] Versions pinned
 - [ ] Reference annotation version recorded
 
+## Related
+Downstream differential expression follows [[deseq2-love-2014]]. That method works on raw counts, so log-CPM output is only for exploratory plots. #rna-seq #bio/normalisation
+
 ## Performance
 `DataFrame.apply(..., axis=1)` over ~60k genes is $O(n \cdot m)$ in Python. The vectorised version above avoids the per-row overhead.

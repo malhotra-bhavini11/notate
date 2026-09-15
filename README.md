@@ -30,12 +30,24 @@ npm run build
 
 The pdf.js worker, fonts, cmaps and wasm are copied from `node_modules` into `public/pdfjs/` by `scripts/copy-pdfjs-assets.mjs`. This runs on install, `dev` and `build`, and the folder is git-ignored.
 
+## Links and tags
+
+- **Link syntax:** `[[target]]`, `[[target|shown text]]` or `[[target#Heading]]`. Type `[[` in the editor for suggestions.
+- **Resolution order:** path (relative to the linking note, then from the root) → file name → note title → slugified text. `[[DESeq2 Notes]]` finds `deseq2-notes.md`. Ties prefer the linking note's folder, then the shallowest path.
+- **Linking files:** `[[paper.pdf]]` needs the extension. In split view a linked file opens in the left pane and a linked note in the right.
+- **Unresolved links** render dashed; click one to create the note.
+- **Linked from** at the foot of each note lists every note whose links resolve to it, with the line numbers and lines.
+- **Tags:** `#tag` or nested `#bio/rna-seq` inline, plus frontmatter `tags:`. `/tags/bio` includes nested `bio/*` tags. Numbers-only tags like `#42` are ignored.
+- **Ignored contexts:** links and tags inside code blocks, inline code, math and URLs don't count. In tables, escape the alias pipe: `[[note\|text]]`.
+
 ## API
 
 | Route | Description |
 |---|---|
 | `GET /api/fs/tree` | Nested JSON tree of the workspace (`name, path, type, ext, mtime, size, children`) |
 | `GET /api/notes?limit=20` | Recently modified notes with title, type, tags |
+| `GET /api/index` | All notes (title, type, tags), linkable files and tag counts. Parsed notes are cached by mtime |
+| `GET /api/backlinks/[...slug]` | Notes linking to a note or file, with `{ line, context }` for each mention |
 | `GET /api/notes/[...slug]` | `{ path, frontmatter, content, mtime }` for a `.md` file |
 | `POST /api/notes/[...slug]` | JSON `{ frontmatter?, content, createOnly? }`; atomic write; `409` if `createOnly` and the file exists |
 | `GET /api/files/raw/[...slug]` | UTF-8 text for code/data files, `application/pdf` for PDFs; `415` for other binaries, `413` over 50 MB |

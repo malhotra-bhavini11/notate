@@ -28,6 +28,8 @@ describe("parseLocation", () => {
     expect(loc("/notes/papers/my%20note.md")).toEqual({ mode: "note", note: "papers/my note.md" });
     expect(loc("/files/pipelines/run.py")).toEqual({ mode: "file", file: "pipelines/run.py" });
     expect(loc("/split?file=a.pdf")).toEqual({ mode: "split", file: "a.pdf", note: null });
+    expect(loc("/tags")).toEqual({ mode: "tags", tag: null });
+    expect(loc("/tags/bio/rna-seq")).toEqual({ mode: "tags", tag: "bio/rna-seq" });
   });
 });
 
