@@ -87,7 +87,8 @@ export interface IndexDTO {
 export interface BacklinkDTO {
   path: string;
   title: string;
-  mentions: { line: number; context: string }[];
+  /** `heading` is the text after `#` in the link, e.g. `L19-L22` or `page=3`. */
+  mentions: { line: number; context: string; heading?: string }[];
 }
 
 export interface SaveNoteBody {

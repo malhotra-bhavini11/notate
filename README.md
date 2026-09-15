@@ -40,6 +40,13 @@ The pdf.js worker, fonts, cmaps and wasm are copied from `node_modules` into `pu
 - **Tags:** `#tag` or nested `#bio/rna-seq` inline, plus frontmatter `tags:`. `/tags/bio` includes nested `bio/*` tags. Numbers-only tags like `#42` are ignored.
 - **Ignored contexts:** links and tags inside code blocks, inline code, math and URLs don't count. In tables, escape the alias pipe: `[[note\|text]]`.
 
+## Links into code and PDFs
+
+- **Linking:** `[[pipelines/qc.py#L19-L22]]` (or `#L19`) links to lines, and `[[paper.pdf#page=3]]` (or `#p3`) to a page. From a note, the link opens the file in split view beside that note. The code viewer scrolls to and highlights the lines, and the PDF viewer jumps to the page.
+- **URLs:** anchors are query parameters, `/split?file=…&note=…&lines=19-22` or `/files/paper.pdf?page=3`, so they work with the back button and bookmarks.
+- **Selecting lines:** click a line number in the code viewer, or Shift+click for a range. **Link** / **Code** copy `[[file#L19-L22]]` or the lines themselves. In split view, **Insert link** / **Insert snippet** add the link (and a fenced block numbered from the first line, via `showLineNumbers{19}`) at the note's cursor. The PDF toolbar has the same for the current page.
+- **Referenced lines:** lines that notes link to get a green dot in the gutter; hover it to see which notes.
+
 ## Citations
 
 **Import citation** (sidebar, dashboard, or the References page) accepts:

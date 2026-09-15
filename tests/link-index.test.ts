@@ -63,3 +63,14 @@ describe("getIndexDTO", () => {
     expect(index.notes.find((n) => n.path === "broken.md")!.title).toBe("broken");
   });
 });
+
+describe("anchored backlinks", () => {
+  it("keeps the #anchor of links into files", async () => {
+    await write("notes/review.md", "Filter bug at [[paper.pdf#page=2]] and again [[papers/paper.pdf]].\n");
+    const backlinks = await getBacklinks(["papers", "paper.pdf"]);
+    expect(backlinks.find((b) => b.path === "notes/review.md")!.mentions).toEqual([
+      { line: 1, context: "Filter bug at [[paper.pdf#page=2]] and again [[papers/paper.pdf]].", heading: "page=2" },
+      { line: 1, context: "Filter bug at [[paper.pdf#page=2]] and again [[papers/paper.pdf]]." },
+    ]);
+  });
+});

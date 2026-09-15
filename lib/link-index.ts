@@ -132,7 +132,7 @@ export async function getBacklinks(segments: string[]): Promise<BacklinkDTO[]> {
     if (note.path === relative) continue;
     const mentions = note.links
       .filter((l) => resolve(l.target, note.path) === relative)
-      .map(({ line, context }) => ({ line, context }));
+      .map(({ line, context, heading }) => ({ line, context, ...(heading ? { heading } : {}) }));
     if (mentions.length) backlinks.push({ path: note.path, title: note.title, mentions });
   }
   return backlinks.sort((a, b) => a.title.localeCompare(b.title));

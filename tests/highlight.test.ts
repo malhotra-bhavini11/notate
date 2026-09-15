@@ -76,6 +76,11 @@ describe("note code blocks", () => {
     expect(text(pres[0])).toBe("import numpy as np\nx = np.log2(1)");
   });
 
+  it("starts line numbers where showLineNumbers{n} says", async () => {
+    const { pres } = await render('```python title="qc.py#L19-L20" showLineNumbers{19}\na = 1\nb = 2\n```');
+    expect(pres[0].properties).toMatchObject({ dataTitle: "qc.py#L19-L20", dataLineNumbers: "", dataLineStart: "19" });
+  });
+
   it("marks {n} meta lines and [!code ++/--] notation, removing the markers", async () => {
     const md = "```python {2}\na = 1\nb = 2\nc = 3  # [!code ++]\nd = 4  # [!code --]\n```";
     const { pres } = await render(md);

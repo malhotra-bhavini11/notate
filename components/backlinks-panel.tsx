@@ -61,8 +61,9 @@ export function BacklinksPanel({ path }: { path: string }) {
               </Link>
               <span className="ml-2 font-mono text-xs text-muted-foreground">{b.path}</span>
               <ul className="mt-1.5 grid gap-1">
-                {b.mentions.map((m) => (
-                  <li key={m.line} className="flex gap-2 text-sm text-muted-foreground">
+                {b.mentions.map((m, i) => (
+                  // Several links can share a line, so the line number alone isn't a unique key.
+                  <li key={`${m.line}-${i}`} className="flex gap-2 text-sm text-muted-foreground">
                     <span className="w-8 shrink-0 text-right font-mono text-xs leading-5 tabular-nums opacity-60">
                       L{m.line}
                     </span>

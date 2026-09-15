@@ -55,7 +55,7 @@ export function CopyButton({ getText, className, label = "Copy code", text = "Co
       aria-label={label}
       title={state === "failed" ? "Couldn't copy" : label}
       className={cn(
-        "flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-sky-400",
+        "flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs whitespace-nowrap text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-sky-400",
         className,
       )}
     >
@@ -69,6 +69,8 @@ interface CodeBlockProps extends React.ComponentProps<"pre"> {
   language?: string;
   title?: string;
   lineNumbers?: boolean;
+  /** First line number when numbering starts somewhere other than 1. */
+  lineStart?: number;
 }
 
 /**
@@ -90,7 +92,7 @@ function codeForCopy(pre: HTMLPreElement | null): string {
 }
 
 /** Dark code block with a header showing the title or language and a copy button. */
-export function CodeBlock({ children, className, language, title, lineNumbers, ...props }: CodeBlockProps) {
+export function CodeBlock({ children, className, language, title, lineNumbers, lineStart, ...props }: CodeBlockProps) {
   const preRef = useRef<HTMLPreElement>(null);
 
   return (
@@ -102,7 +104,12 @@ export function CodeBlock({ children, className, language, title, lineNumbers, .
         </span>
         <CopyButton getText={() => codeForCopy(preRef.current)} />
       </div>
-      <pre ref={preRef} {...props} data-line-numbers={lineNumbers ? "" : undefined} className={cn("overflow-x-auto py-3 font-mono text-[13px] leading-6 text-zinc-100", className)}>
+      <pre
+        ref={preRef}
+        {...props}
+        data-line-numbers={lineNumbers ? "" : undefined}
+        style={lineStart ? ({ "--line-start": lineStart - 1 } as React.CSSProperties) : undefined}
+        className={cn("overflow-x-auto py-3 font-mono text-[13px] leading-6 text-zinc-100", className)}>
         {children}
       </pre>
     </div>

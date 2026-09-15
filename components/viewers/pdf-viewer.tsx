@@ -3,11 +3,14 @@
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-import { ExternalLink, Maximize, Minus, Plus } from "lucide-react";
+import { ExternalLink, Link2, Maximize, Minus, Plus } from "lucide-react";
 import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 
+import { CopyButton } from "@/components/code-block";
+import { insertIntoNote, useCanInsertIntoNote } from "@/components/note-insert";
 import { Button } from "@/components/ui/button";
+import { fileLink } from "@/lib/anchors";
 
 // Must be set in the same module that renders <Document>. The worker and data
 // files are copied to public/pdfjs by scripts/copy-pdfjs-assets.mjs.
@@ -43,8 +46,19 @@ class PdfErrorBoundary extends Component<{ children: React.ReactNode }, { error:
  * pages near the viewport are rendered, and placeholders keep their height so
  * scrolling stays stable on long documents.
  */
-export default function PdfViewer({ url }: { url: string }) {
+interface PdfViewerProps {
+  url: string;
+  /** Workspace path, for `[[paper.pdf#page=3]]` links. */
+  path?: string;
+  /** Page to jump to (from `?page=3`). */
+  page?: number | null;
+}
+
+export default function PdfViewer({ url, path, page }: PdfViewerProps) {
+  const canInsert = useCanInsertIntoNote();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pendingPage = useRef<number | null>(null);
+  const programmaticUntil = useRef(0);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [paneWidth, setPaneWidth] = useState(0);
   const [numPages, setNumPages] = useState(0);
@@ -111,6 +125,7 @@ export default function PdfViewer({ url }: { url: string }) {
     const el = scrollRef.current;
     if (!el) return;
     scrollFraction.current = el.scrollHeight ? el.scrollTop / el.scrollHeight : 0;
+    if (Date.now() > programmaticUntil.current) pendingPage.current = null; // the user took over
     const probe = el.scrollTop + el.clientHeight * 0.3;
     let page = 1;
     for (let i = 0; i < numPages; i++) {
@@ -132,6 +147,21 @@ export default function PdfViewer({ url }: { url: string }) {
     const target = pages[Math.min(Math.max(n, 1), pages.length) - 1];
     if (target && scrollRef.current) scrollRef.current.scrollTop = target.offsetTop - PADDING;
   }, []);
+
+  // Jump to the linked page. Page heights settle as the document and its first
+  // page load, so keep re-applying the jump until the user scrolls themselves.
+  useEffect(() => {
+    pendingPage.current = page ?? null;
+  }, [page]);
+  useEffect(() => {
+    if (!pendingPage.current || numPages === 0) return;
+    const frame = requestAnimationFrame(() => {
+      if (!pendingPage.current) return;
+      programmaticUntil.current = Date.now() + 400;
+      scrollToPage(pendingPage.current);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [page, numPages, defaultRatio, pageWidth, scrollToPage]);
 
   const zoomBy = (direction: 1 | -1) =>
     setZoom((z) => {
@@ -162,6 +192,28 @@ export default function PdfViewer({ url }: { url: string }) {
           />
           <span className="text-muted-foreground tabular-nums">/ {numPages || "–"}</span>
         </form>
+
+        {path && (
+          <div className="ml-2 flex items-center gap-0.5">
+            <CopyButton
+              className="text-muted-foreground hover:bg-muted hover:text-foreground"
+              label="Copy link to this page"
+              text="Link"
+              getText={() => fileLink(path, { kind: "page", page: currentPage })}
+            />
+            {canInsert && (
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => insertIntoNote(`${fileLink(path, { kind: "page", page: currentPage })} `)}
+                title="Insert a link to this page into the note"
+              >
+                <Link2 />
+                Insert link
+              </Button>
+            )}
+          </div>
+        )}
 
         <div className="ml-auto flex items-center gap-0.5">
           <Button variant="ghost" size="icon-sm" onClick={() => zoomBy(-1)} disabled={zoom <= ZOOM_STEPS[0]} aria-label="Zoom out">

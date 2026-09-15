@@ -15,10 +15,12 @@ import { CodeBlock } from "@/components/code-block";
 import { useNoteLinks } from "@/components/use-note-links";
 import { useWorkspace } from "@/components/workspace-provider";
 import { ACCESSION_TYPE_BY_KEY } from "@/lib/accessions";
+import { formatAnchor, parseAnchor } from "@/lib/anchors";
 import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
 import { extractLinksAndTags, parseCitation, remarkWikiTokens } from "@/lib/markdown-tokens";
 import { noteHref, referencesHref, tagHref } from "@/lib/paths";
 import type { ReferenceDTO } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens];
 // KaTeX first: display math also arrives as <pre><code class="language-math">,
@@ -39,7 +41,12 @@ const COMPONENTS: Components = {
   a({ node, children, href, ...props }) {
     const properties = node?.properties ?? {};
     if (typeof properties.dataWikilink === "string") {
-      return <WikiLink target={properties.dataWikilink}>{children}</WikiLink>;
+      const heading = typeof properties.dataHeading === "string" ? properties.dataHeading : undefined;
+      return (
+        <WikiLink target={properties.dataWikilink} heading={heading}>
+          {children}
+        </WikiLink>
+      );
     }
     if (typeof properties.dataAccession === "string") {
       const type = ACCESSION_TYPE_BY_KEY.get(properties.dataAccession);
@@ -80,6 +87,7 @@ const COMPONENTS: Components = {
         language={typeof properties.dataLanguage === "string" ? properties.dataLanguage : undefined}
         title={typeof properties.dataTitle === "string" ? properties.dataTitle : undefined}
         lineNumbers={properties.dataLineNumbers !== undefined}
+        lineStart={Number(properties.dataLineStart) || undefined}
       >
         {children}
       </CodeBlock>
@@ -140,15 +148,21 @@ function MarkdownBody({ content, rehypePlugins }: { content: string; rehypePlugi
   );
 }
 
-function WikiLink({ target, children }: { target: string; children: React.ReactNode }) {
+function WikiLink({ target, heading, children }: { target: string; heading?: string; children: React.ReactNode }) {
   const fromPath = useContext(FromPathContext);
   const { resolve, hrefFor, ready } = useNoteLinks();
   const { openNewNote } = useWorkspace();
   const resolved = ready ? resolve(target, fromPath) : null;
 
   if (resolved) {
+    // `[[qc.py#L19-L22]]` / `[[paper.pdf#page=3]]` open the file at that spot, beside this note.
+    const anchor = parseAnchor(heading);
     return (
-      <Link href={hrefFor(resolved)} className="wikilink" title={resolved}>
+      <Link
+        href={hrefFor(resolved, anchor)}
+        className={cn("wikilink", anchor && "wikilink-anchor")}
+        title={anchor ? `${resolved} · ${formatAnchor(anchor)}` : resolved}
+      >
         {children}
       </Link>
     );

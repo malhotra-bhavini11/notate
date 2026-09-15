@@ -1,9 +1,17 @@
 // URL helpers shared by client and server. Workspace paths always use `/`.
 
+import { anchorToParams, type FileAnchor } from "./anchors";
+
 const encodePath = (p: string) => p.split("/").filter(Boolean).map(encodeURIComponent).join("/");
 
 export const noteHref = (p: string) => `/notes/${encodePath(p)}`;
-export const fileHref = (p: string) => `/files/${encodePath(p)}`;
+const querySuffix = (anchor?: FileAnchor | null) => {
+  const params = new URLSearchParams(anchorToParams(anchor)).toString();
+  return params ? `?${params}` : "";
+};
+
+/** `/files/pipelines/qc.py`, optionally `?lines=19-22` or `?page=3`. */
+export const fileHref = (p: string, anchor?: FileAnchor | null) => `/files/${encodePath(p)}${querySuffix(anchor)}`;
 export const noteApiUrl = (p: string) => `/api/notes/${encodePath(p)}`;
 export const rawFileUrl = (p: string) => `/api/files/raw/${encodePath(p)}`;
 export const backlinksApiUrl = (p: string) => `/api/backlinks/${encodePath(p)}`;
@@ -24,16 +32,19 @@ export interface SplitTarget {
   file?: string | null;
   /** Right pane: Markdown note. */
   note?: string | null;
+  /** Line range or page to show in the left pane. */
+  anchor?: FileAnchor | null;
 }
 
 // Query values may contain `/`; leaving it unescaped keeps split URLs readable.
 const encodeQueryPath = (p: string) => encodeURIComponent(p).replace(/%2F/gi, "/");
 
 /** `/split?file=papers/a.pdf&note=papers/a.md`; either side may be empty. */
-export function splitHref({ file, note }: SplitTarget): string {
+export function splitHref({ file, note, anchor }: SplitTarget): string {
   const params = [
     file ? `file=${encodeQueryPath(file)}` : null,
     note ? `note=${encodeQueryPath(note)}` : null,
+    ...(file ? Object.entries(anchorToParams(anchor)).map(([k, v]) => `${k}=${v}`) : []),
   ].filter(Boolean);
   return params.length ? `/split?${params.join("&")}` : "/split";
 }
@@ -66,6 +77,16 @@ export function parseLocation(pathname: string, search: URLSearchParams): Worksp
 export function treeHrefFor(location: WorkspaceLocation, p: string): string {
   if (location.mode !== "split") return hrefForFile(p);
   return isNotePath(p) ? splitHref({ file: location.file, note: p }) : splitHref({ file: p, note: location.note });
+}
+
+/**
+ * Link target for `[[file#L19-L22]]` / `[[paper.pdf#page=3]]`: from a note (or
+ * split view) the file opens beside that note, so you keep writing while reading.
+ */
+export function anchoredFileHref(location: WorkspaceLocation, p: string, anchor: FileAnchor): string {
+  if (location.mode === "note") return splitHref({ file: p, note: location.note, anchor });
+  if (location.mode === "split") return splitHref({ file: p, note: location.note, anchor });
+  return fileHref(p, anchor);
 }
 
 /** Where the Split view toggle goes: into split with the current file, or back out of it. */

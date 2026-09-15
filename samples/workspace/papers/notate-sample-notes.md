@@ -13,6 +13,8 @@ The `source` field above links this note to `papers/notate-sample.pdf`. Press **
 ## Quotes
 > Pages with different sizes keep their own aspect ratio in the viewer.
 
+From [[notate-sample.pdf#page=2]].
+
 ## Model
 $$
 \operatorname{Var}(K) = \mu + \alpha \mu^2

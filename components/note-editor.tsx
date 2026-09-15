@@ -7,6 +7,7 @@ import { BacklinksPanel } from "@/components/backlinks-panel";
 import { FrontmatterCard } from "@/components/frontmatter-card";
 import { useLinkAutocomplete } from "@/components/link-autocomplete";
 import { MarkdownPreview } from "@/components/markdown-preview";
+import { registerNoteInserter } from "@/components/note-insert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/workspace-provider";
@@ -133,6 +134,8 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
   // [[ autocomplete rewrites the content, then restores the caret after React renders it.
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCaret = useRef<number | null>(null);
+  // Where text from the other split pane goes; kept when focus moves to that pane.
+  const lastCaret = useRef<number | null>(null);
   const autocomplete = useLinkAutocomplete(textareaRef, (content, caret) => {
     pendingCaret.current = caret;
     update({ content });
@@ -140,10 +143,31 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (el && pendingCaret.current !== null) {
+      el.focus({ preventScroll: true });
       el.setSelectionRange(pendingCaret.current, pendingCaret.current);
+      lastCaret.current = pendingCaret.current;
       pendingCaret.current = null;
     }
-  }, [doc.content]);
+  }, [doc.content, mode]);
+
+  // Accept "Insert link/snippet" from the code or PDF viewer in split view.
+  useEffect(() => {
+    if (load.kind !== "ready") return;
+    return registerNoteInserter((text) => {
+      const content = latest.current.content;
+      const at = Math.min(lastCaret.current ?? content.length, content.length);
+      const before = content.slice(0, at);
+      // Blocks (snippets) start on their own paragraph; inline links just need a space.
+      const block = text.includes("\n");
+      let lead = "";
+      if (block && before && !before.endsWith("\n\n")) lead = before.endsWith("\n") ? "\n" : "\n\n";
+      else if (!block && before && !/\s$/.test(before)) lead = " ";
+      const inserted = lead + text;
+      pendingCaret.current = at + inserted.length;
+      setMode("write");
+      update({ content: before + inserted + content.slice(at) });
+    });
+  }, [load.kind, update]);
 
   // Warn before closing the tab with unsaved edits; flush pending edits when navigating away in-app.
   useEffect(() => {
@@ -237,6 +261,9 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
               if (e.key.startsWith("Arrow") && !autocomplete.open) autocomplete.sync(e.currentTarget);
             }}
             onClick={(e) => autocomplete.sync(e.currentTarget)}
+            onSelect={(e) => {
+              lastCaret.current = e.currentTarget.selectionStart;
+            }}
             onBlur={autocomplete.close}
             onScroll={autocomplete.close}
             spellCheck

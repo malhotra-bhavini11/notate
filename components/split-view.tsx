@@ -11,15 +11,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SourceViewer } from "@/components/viewers/source-viewer";
 import { useWorkspace } from "@/components/workspace-provider";
+import type { FileAnchor } from "@/lib/anchors";
 import { isNotePath, isPdfPath, rawFileUrl, splitHref } from "@/lib/paths";
 import { flattenTree } from "@/lib/tree-utils";
 
 interface SplitViewProps {
   file: string | null;
   note: string | null;
+  /** Line range or page for the left pane. */
+  anchor: FileAnchor | null;
 }
 
-export function SplitView({ file, note }: SplitViewProps) {
+export function SplitView({ file, note, anchor }: SplitViewProps) {
   const router = useRouter();
 
   return (
@@ -44,7 +47,12 @@ export function SplitView({ file, note }: SplitViewProps) {
               )}
             </PaneHeader>
             <div className="min-h-0 flex-1">
-              <SourceViewer key={file} path={file} />
+              <SourceViewer
+                key={file}
+                path={file}
+                anchor={anchor}
+                anchorHref={(next) => splitHref({ file, note, anchor: next })}
+              />
             </div>
           </>
         ) : (

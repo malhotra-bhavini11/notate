@@ -147,7 +147,7 @@ export function rehypeCodeFence() {
 /**
  * Exposes the language and fence meta to the React code block as data
  * attributes, and lets the page's CSS own the block background:
- * ```python title="qc.py" showLineNumbers {3-4}
+ * ```python title="qc.py" showLineNumbers{10} {12-13}
  */
 const transformerBlockMeta: ShikiTransformer = {
   name: "notate:block-meta",
@@ -158,7 +158,12 @@ const transformerBlockMeta: ShikiTransformer = {
     if (language && language !== "text") node.properties.dataLanguage = language;
     const title = readMetaAttr(raw, "title");
     if (title) node.properties.dataTitle = title;
-    if (/\bshowLineNumbers\b/.test(raw)) node.properties.dataLineNumbers = "";
+    const lineNumbers = raw.match(/\bshowLineNumbers(?:\{(\d+)\})?/);
+    if (lineNumbers) {
+      node.properties.dataLineNumbers = "";
+      // `showLineNumbers{19}` numbers from 19, e.g. for snippets copied out of a file.
+      if (lineNumbers[1]) node.properties.dataLineStart = lineNumbers[1];
+    }
     delete node.properties.style;
   },
 };

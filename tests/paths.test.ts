@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { activePaths, parseLocation, splitHref, splitToggleHref, treeHrefFor } from "@/lib/paths";
+import { anchorFromParams, fileLink, formatAnchor, parseAnchor } from "@/lib/anchors";
+import { activePaths, anchoredFileHref, fileHref, parseLocation, splitHref, splitToggleHref, treeHrefFor } from "@/lib/paths";
 
 const loc = (url: string) => {
   const u = new URL(url, "http://localhost");
@@ -48,5 +49,36 @@ describe("tree links and toggle", () => {
     expect(splitToggleHref(split)).toBe("/notes/n.md");
     expect(splitToggleHref(loc("/split?file=a.pdf"))).toBe("/files/a.pdf");
     expect(activePaths(split)).toEqual(["a.pdf", "n.md"]);
+  });
+});
+
+describe("anchored file links", () => {
+  it("parses and formats line and page anchors", () => {
+    expect(parseAnchor("L19")).toEqual({ kind: "lines", start: 19, end: 19 });
+    expect(parseAnchor("L22-L19")).toEqual({ kind: "lines", start: 19, end: 22 });
+    expect(parseAnchor("#L19-22")).toEqual({ kind: "lines", start: 19, end: 22 });
+    expect(parseAnchor("page=3")).toEqual({ kind: "page", page: 3 });
+    expect(parseAnchor("p3")).toEqual({ kind: "page", page: 3 });
+    expect(parseAnchor("Methods")).toBeNull();
+    expect(parseAnchor("L0")).toBeNull();
+    expect(formatAnchor({ kind: "lines", start: 19, end: 22 })).toBe("L19-L22");
+    expect(fileLink("pipelines/qc.py", { kind: "lines", start: 5, end: 5 })).toBe("[[pipelines/qc.py#L5]]");
+  });
+
+  it("round-trips anchors through URLs", () => {
+    const anchor = { kind: "lines", start: 19, end: 22 } as const;
+    const href = splitHref({ file: "pipelines/qc.py", note: "n.md", anchor });
+    expect(href).toBe("/split?file=pipelines/qc.py&note=n.md&lines=19-22");
+    expect(anchorFromParams(new URL(href, "http://x").searchParams)).toEqual(anchor);
+    expect(fileHref("paper.pdf", { kind: "page", page: 3 })).toBe("/files/paper.pdf?page=3");
+    expect(anchorFromParams(new URLSearchParams("lines=7"))).toEqual({ kind: "lines", start: 7, end: 7 });
+    expect(anchorFromParams(new URLSearchParams("lines=abc"))).toBeNull();
+  });
+
+  it("opens anchored files beside the current note", () => {
+    const anchor = { kind: "page", page: 2 } as const;
+    expect(anchoredFileHref(loc("/notes/n.md"), "p.pdf", anchor)).toBe("/split?file=p.pdf&note=n.md&page=2");
+    expect(anchoredFileHref(loc("/split?file=a.py&note=n.md"), "p.pdf", anchor)).toBe("/split?file=p.pdf&note=n.md&page=2");
+    expect(anchoredFileHref(loc("/"), "p.pdf", anchor)).toBe("/files/p.pdf?page=2");
   });
 });

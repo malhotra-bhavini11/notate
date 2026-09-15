@@ -10,6 +10,9 @@
 .wikilink {
   @apply rounded-sm font-medium text-sky-700 no-underline decoration-sky-700/40 underline-offset-2 hover:underline dark:text-sky-400;
 }
+.wikilink-anchor {
+  @apply font-mono text-[0.9em];
+}
 .wikilink-missing {
   @apply cursor-pointer text-muted-foreground underline decoration-dashed hover:text-foreground;
 }
@@ -28,7 +31,7 @@
 .code-block pre > code {
   display: grid;
   min-width: max-content;
-  counter-reset: line;
+  counter-reset: line var(--line-start, 0);
 }
 .code-block .line {
   padding-inline: 1rem;

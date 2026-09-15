@@ -22,8 +22,8 @@ Test data: GEO series GSE60450 (mouse mammary gland RNA-seq). Genes are keyed by
 | Normalise | filtered counts | log-CPM | numpy |
 
 ## Correctness
-1. `filter_expressed` compares **log-CPM** values against `min_count: 10`, a raw-count threshold. $\log_2 \mathrm{CPM} \ge 10$ means CPM $\ge 1024$, so almost every gene is dropped.
-2. The filter runs after normalisation, so library sizes include genes that are later removed.
+1. `filter_expressed` ([[pipelines/normalize_counts.py#L24-L26]]) compares **log-CPM** values against `min_count: 10`, a raw-count threshold. $\log_2 \mathrm{CPM} \ge 10$ means CPM $\ge 1024$, so almost every gene is dropped.
+2. The filter runs after normalisation ([[pipelines/normalize_counts.py#L32]]), so library sizes include genes that are later removed.
 
 Filter on raw counts first, then normalise:
 

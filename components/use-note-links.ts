@@ -4,8 +4,9 @@ import { useCallback, useMemo } from "react";
 
 import { useWorkspaceLocation } from "@/components/use-workspace-location";
 import { useWorkspace } from "@/components/workspace-provider";
+import type { FileAnchor } from "@/lib/anchors";
 import { createResolver } from "@/lib/link-resolver";
-import { treeHrefFor } from "@/lib/paths";
+import { anchoredFileHref, isNotePath, treeHrefFor } from "@/lib/paths";
 
 /**
  * Link resolution for the current view. Resolved paths open in place: in split
@@ -24,7 +25,11 @@ export function useNoteLinks() {
     [index],
   );
 
-  const hrefFor = useCallback((path: string) => treeHrefFor(location, path), [location]);
+  const hrefFor = useCallback(
+    (path: string, anchor?: FileAnchor | null) =>
+      anchor && !isNotePath(path) ? anchoredFileHref(location, path, anchor) : treeHrefFor(location, path),
+    [location],
+  );
 
   return { resolve, hrefFor, ready: index !== null };
 }
