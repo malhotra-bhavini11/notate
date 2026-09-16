@@ -1,6 +1,6 @@
 "use client";
 
-import { BookPlus, Columns2, Database, FileText, Hash, History, Library, ListFilter, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
+import { BookPlus, Columns2, Database, FileText, Hash, History, Library, ListFilter, NotebookPen, PanelLeft, Plus, RefreshCw, Search, TextSearch, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
@@ -18,6 +18,7 @@ import {
   historyHref,
   identifiersHref,
   queryHref,
+  searchHref,
   referencesHref,
   splitToggleHref,
   tagHref,
@@ -133,6 +134,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {index && <span className="ml-auto text-xs text-muted-foreground tabular-nums">{index.tags.length}</span>}
           </Link>
           <Link
+            href={searchHref()}
+            onClick={closeIfNarrow}
+            title="Search the text of every note and file"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+          >
+            <TextSearch className="size-4 text-muted-foreground" />
+            Search
+          </Link>
+          <Link
             href={identifiersHref}
             onClick={closeIfNarrow}
             title="Datasets, genes, proteins, and other database IDs in your notes"
@@ -174,6 +184,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="h-8 bg-background pl-8"
             />
           </div>
+          {query.trim() && (
+            // The box filters file names; this is the way through to their contents.
+            <Link
+              href={searchHref(query)}
+              onClick={closeIfNarrow}
+              className="mt-1 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+            >
+              <TextSearch className="size-3.5 shrink-0" />
+              <span className="truncate">Search text for “{query.trim()}”</span>
+            </Link>
+          )}
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
@@ -289,6 +310,8 @@ function LocationCrumbs({ location }: { location: WorkspaceLocation }) {
       return <span className="text-sm text-muted-foreground">Query</span>;
     case "history":
       return <span className="text-sm text-muted-foreground">History</span>;
+    case "search":
+      return <span className="text-sm text-muted-foreground">Search</span>;
     case "tags":
       return (
         <span className="truncate text-sm text-muted-foreground">

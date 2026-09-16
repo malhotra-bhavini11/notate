@@ -24,6 +24,9 @@ export const identifiersHref = "/identifiers";
 export const queryHref = (q?: string) => (q?.trim() ? `/query?q=${encodeURIComponent(q.trim())}` : "/query");
 export const queryApiUrl = (q: string) => `/api/query?q=${encodeURIComponent(q)}`;
 export const historyHref = "/history";
+/** `/search?q=dispersion` */
+export const searchHref = (q?: string) => (q?.trim() ? `/search?q=${encodeURIComponent(q.trim())}` : "/search");
+export const searchApiUrl = (q: string) => `/api/search?q=${encodeURIComponent(q)}`;
 /** `/api/history`, optionally for one note and one snapshot. */
 export const historyApiUrl = (p?: string, rev?: string) => {
   const params = new URLSearchParams();
@@ -68,6 +71,7 @@ export type WorkspaceLocation =
   | { mode: "identifiers" }
   | { mode: "query" }
   | { mode: "history" }
+  | { mode: "search" }
   | { mode: "note"; note: string }
   | { mode: "file"; file: string }
   | { mode: "split"; file: string | null; note: string | null };
@@ -81,6 +85,7 @@ export function parseLocation(pathname: string, search: URLSearchParams): Worksp
   if (pathname === "/identifiers") return { mode: "identifiers" };
   if (pathname === "/query") return { mode: "query" };
   if (pathname === "/history") return { mode: "history" };
+  if (pathname === "/search") return { mode: "search" };
   const tagMatch = pathname.match(/^\/tags(?:\/(.+))?$/);
   if (tagMatch) return { mode: "tags", tag: tagMatch[1] ? joinSlug(tagMatch[1].split("/")) : null };
   const match = pathname.match(/^\/(notes|files)\/(.+)$/);
@@ -118,6 +123,7 @@ export function splitToggleHref(location: WorkspaceLocation): string {
     case "identifiers":
     case "query":
     case "history":
+    case "search":
       return splitHref({});
     case "split":
       if (location.note) return noteHref(location.note);

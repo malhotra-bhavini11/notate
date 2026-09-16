@@ -13,7 +13,7 @@ export type QueryTerm =
   | { kind: "has"; field: string; negate: boolean }
   /** `in:papers`: notes in that folder or below. */
   | { kind: "in"; folder: string; negate: boolean }
-  /** Bare words: part of the title or path. */
+  /** Bare words: anywhere in the title, path, or the note's text. */
   | { kind: "text"; value: string; negate: boolean };
 
 export interface SortKey {
@@ -39,6 +39,8 @@ export interface QueryableNote {
   citations: string[];
   accessions: string[];
   links: string[];
+  /** The note's text, when the caller has it: bare words search this too. */
+  text?: string;
   mtime: number;
 }
 
@@ -330,7 +332,10 @@ function matchesTerm(note: QueryableNote, term: QueryTerm, ctx: MatchContext): b
       break;
     case "text": {
       const q = term.value.toLowerCase();
-      result = note.title.toLowerCase().includes(q) || note.path.toLowerCase().includes(q);
+      result =
+        note.title.toLowerCase().includes(q) ||
+        note.path.toLowerCase().includes(q) ||
+        (note.text?.toLowerCase().includes(q) ?? false);
       break;
     }
   }

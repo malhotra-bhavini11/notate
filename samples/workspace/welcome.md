@@ -13,7 +13,7 @@ Everything here is a plain Markdown file in the `workspace/` folder. Edit notes 
 - **New note**: the `+` in the sidebar, or `Ctrl+Alt+N`. Templates: paper review, code/pipeline review, experiment log, mathematical background, theorem/proof.
 - **Autosave**: 1 second after you stop typing. `Ctrl+S` saves immediately.
 - **Frontmatter** (title, type, date, tags, custom fields) is edited in the card above the note body.
-- **Filter files**: `Ctrl+K`.
+- **Filter files**: `Ctrl+K`. To search *inside* notes and code, use **Search** in the sidebar: `dispersion "raw counts" -deprecated`.
 
 ## Linking notes
 - Type `[[` to link another note; suggestions appear as you type. `[[deseq2-love-2014|the DESeq2 paper]]` shows custom link text.

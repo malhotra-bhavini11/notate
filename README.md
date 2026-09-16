@@ -99,6 +99,23 @@ How matching works:
 - **Frontmatter:** values that are identifiers get a link icon. Bare values count too when the field name says what they are (`pmid`, `arxiv`, `pdb`, `taxid`, `gene_id`).
 - **`/identifiers`:** lists every ID across notes, grouped by kind, with the notes that mention it.
 
+## Search
+
+**Search** (sidebar, `/search?q=…`) looks inside every note and every text file beside them — code, configs, `.bib`, CSV. Results are ranked, with the matching lines shown and the words highlighted; clicking a line opens the note with the cursor on it, or the file view scrolled to it.
+
+| Syntax | Meaning |
+|---|---|
+| `dispersion shrinkage` | Both words, anywhere in the file, in any case. Partial words match, so `disper` finds `dispersion` |
+| `"raw counts"` | That phrase, as written |
+| `-deprecated` | Leaves out files containing the word |
+
+- **What's searched:** note text including frontmatter, plus files up to 512 KB with a known text extension. PDFs and other binaries are skipped.
+- **Ranking:** a hit in the title or path outweighs one in the body; then the number of matches, then the most recently edited.
+- **Line numbers** count from the top of the file, frontmatter included, matching what the editor and the file viewer show.
+- **Freshness:** files are re-read when their size or mtime changes, so results follow edits made anywhere, including outside the app.
+- **Bare words in a query** search the text too, so `type:paper-review dispersion` filters by frontmatter and content at once. Use **Search** to read the matching lines, **Query** to get a table.
+- The sidebar's file filter also offers **Search text for "…"** once you type in it.
+
 ## Queries
 
 **Query** (sidebar, `/query?q=…`) finds notes by frontmatter and by what they contain. A `query` fence in a note renders the same results as a live table, which updates as notes change:
@@ -125,7 +142,7 @@ type:paper-review tag:scrna-seq -has:dataset year:>=2020 sort:-year show:authors
 | `links:deseq2-love-2014`, `links:pipelines/qc.py` | Notes linking to a note or file, resolved like `[[links]]` |
 | `modified:>=2026-09-01` | Last modified date |
 | `-term` | Excludes matches of any term |
-| `deseq` | Title or path contains the word |
+| `deseq` | Title, path, or the note's text contains the word |
 | `sort:-year,title`, `limit:20`, `show:year,doi` | Order (`-` for descending; default newest first), row count, and columns |
 
 - **Combining:** terms combine with AND. A comma inside one value means OR.
@@ -228,6 +245,7 @@ counts = counts.dropna()  # [!code --]
 | `GET /api/fs/tree` | Nested JSON tree of the workspace (`name, path, type, ext, mtime, size, children`) |
 | `GET /api/notes?limit=20` | Recently modified notes with title, type, tags |
 | `GET /api/index` | All notes (title, type, tags), linkable files, tag counts and frontmatter field counts. Parsed notes are cached by mtime |
+| `GET /api/search?q=…&limit=50` | `{ query, results }`: ranked files with `matches`, `score`, and the matching lines with highlight ranges |
 | `GET /api/query?q=…` | `{ columns, rows: [{ path, title, values }], total, errors }` for a query. At most 500 rows |
 | `GET /api/history` | `{ status, commits }`. `?path=note.md` limits it to one note; `?path=…&rev=…` returns that note's text at that snapshot |
 | `POST /api/history` | `{ action: "init" \| "snapshot" \| "push" \| "restore", path?, rev?, message? }` |

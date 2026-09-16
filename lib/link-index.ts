@@ -7,6 +7,7 @@ import { parseMarkdown } from "./frontmatter";
 import { createResolver, type Resolver } from "./link-resolver";
 import { extractLinksAndTags, normalizeTag, type ExtractedLink } from "./markdown-tokens";
 import { countFields, parseQuery, type QueryableNote, type QueryResult, runQuery } from "./query";
+import { noteText } from "./search-index";
 import { buildTree } from "./tree";
 import { flattenTree } from "./tree-utils";
 import type { BacklinkDTO, IndexDTO } from "./types";
@@ -128,7 +129,7 @@ export async function getIndexDTO(): Promise<IndexDTO> {
 
 /** Runs a frontmatter query (see lib/query.ts) over every note. */
 export async function queryNotes(input: string): Promise<QueryResult> {
-  const { notes, resolve } = await getLinkIndex();
+  const [{ notes, resolve }, text] = await Promise.all([getLinkIndex(), noteText()]);
   const queryable: QueryableNote[] = notes.map((n) => ({
     path: n.path,
     title: n.title,
@@ -137,6 +138,8 @@ export async function queryNotes(input: string): Promise<QueryResult> {
     citations: n.citations,
     accessions: n.accessions,
     links: [...new Set(n.links.map((l) => resolve(l.target, n.path)).filter((p): p is string => p !== null))],
+    // Bare words in a query search the note's text, as Search does.
+    text: text.get(n.path),
     mtime: n.mtime,
   }));
   return runQuery(parseQuery(input), queryable, { resolve: (target) => resolve(target) });

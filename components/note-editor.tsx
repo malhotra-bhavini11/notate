@@ -48,9 +48,11 @@ interface NoteEditorProps {
   path: string;
   /** Called once with the note's frontmatter after it loads (split view uses `source`). */
   onLoaded?: (frontmatter: Frontmatter) => void;
+  /** 1-based line in the body to put the cursor on once loaded, e.g. from a search hit. */
+  focusLine?: number;
 }
 
-export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
+export function NoteEditor({ path, onLoaded, focusLine }: NoteEditorProps) {
   const { refresh } = useWorkspace();
   const onLoadedRef = useRef(onLoaded);
   useEffect(() => {
@@ -153,6 +155,22 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
       pendingCaret.current = null;
     }
   }, [doc.content, mode]);
+
+  // Arriving from a search hit: select that line and scroll it into view, once.
+  const focusedLine = useRef<number | null>(null);
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (load.kind !== "ready" || !focusLine || !el || focusedLine.current === focusLine) return;
+    focusedLine.current = focusLine;
+    const lines = doc.content.split("\n");
+    const start = lines.slice(0, focusLine - 1).reduce((n, line) => n + line.length + 1, 0);
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(start, start + (lines[focusLine - 1]?.length ?? 0));
+    lastCaret.current = start;
+    // Put the line near the middle rather than at the very bottom of the box.
+    const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 20;
+    el.scrollTop = Math.max(0, (focusLine - 1) * lineHeight - el.clientHeight / 2);
+  }, [load.kind, focusLine, doc.content]);
 
   // Accept "Insert link/snippet" from the code or PDF viewer in split view.
   useEffect(() => {

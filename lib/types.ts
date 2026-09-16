@@ -120,6 +120,11 @@ export interface HistoryDTO {
   commits: HistoryCommit[];
 }
 
+export interface SearchDTO {
+  query: string;
+  results: import("./search").SearchResult[];
+}
+
 export interface BacklinkDTO {
   path: string;
   title: string;
