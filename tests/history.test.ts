@@ -67,6 +67,9 @@ describe.skipIf(!hasGit)("workspace history", () => {
     expect(status.last?.subject).toBe("Start tracking notes");
     // The workspace gets its own repo rather than joining one further up.
     expect(await fs.stat(path.join(root, ".git"))).toBeTruthy();
+    // Half-written saves and OS clutter stay out of it.
+    expect(await fs.readFile(path.join(root, ".gitignore"), "utf8")).toContain("*.tmp");
+    expect(status.last?.files).toEqual([".gitignore", "note.md"]);
   });
 
   it("snapshots later edits and names them after what changed", async () => {

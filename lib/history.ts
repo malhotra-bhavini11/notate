@@ -15,8 +15,8 @@ export const SNAPSHOT_SECONDS = Math.max(5, Number(process.env.NOTATE_SNAPSHOT_S
 const AUTO_SNAPSHOTS = process.env.NOTATE_HISTORY !== "off";
 const IDENTITY = ["-c", "user.name=notate", "-c", "user.email=notate@localhost"];
 // Separators git won't find in a commit subject or a path.
-const RECORD = "";
-const FIELD = "";
+const RECORD = "\u001e";
+const FIELD = "\u001f";
 
 async function git(args: string[], cwd: string): Promise<string> {
   const { stdout } = await execFileAsync("git", args, { cwd, windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
@@ -104,6 +104,15 @@ export async function getStatus(): Promise<HistoryStatusDTO> {
   };
 }
 
+// Atomic saves leave `.note.md.<pid>.<time>.tmp` behind if the app dies
+// mid-write, and Windows and macOS drop their own files into folders.
+const GITIGNORE = `# Written by notate when history was turned on.
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini
+`;
+
 /** `git init` in the workspace, then a first snapshot of whatever is there. */
 export async function initHistory(): Promise<HistoryStatusDTO> {
   return serial(async () => {
@@ -114,6 +123,8 @@ export async function initHistory(): Promise<HistoryStatusDTO> {
     } catch {
       await git(["init"], root); // git before 2.28 has no -b
     }
+    const gitignore = path.join(root, ".gitignore");
+    if (!(await fs.stat(gitignore).catch(() => null))) await writeFileAtomic(gitignore, GITIGNORE);
     await commitAll(root, "Start tracking notes");
     return getStatus();
   });
