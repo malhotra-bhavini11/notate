@@ -176,6 +176,7 @@ A diagram that doesn't parse shows the error and the source instead of breaking 
 - **Snapshot now** on the History page commits immediately.
 - **Per note:** the **History** tab beside Write and Preview lists that note's snapshots (including across renames), diffs the selected one against the file on disk, and restores it with one click. Frontmatter is part of the diff.
 - **Restoring never rewrites history:** the old version is written back as a new snapshot, so a restore can itself be undone.
+- **Who the snapshots are by:** your own `git config user.name` / `user.email` when they're set, so pushed snapshots are attributed to you; otherwise a local `notate` placeholder.
 - **Off-machine backup:** add a remote in the workspace folder and push when you want to. The History page shows the remote once one is set; pushing stays a manual step, so nothing leaves your machine on its own.
 
 ```bash

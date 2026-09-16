@@ -13,7 +13,7 @@ const execFileAsync = promisify(execFile);
 /** How long after an edit the automatic snapshot runs, coalescing a burst of saves. */
 export const SNAPSHOT_SECONDS = Math.max(5, Number(process.env.NOTATE_SNAPSHOT_SECONDS ?? 120));
 const AUTO_SNAPSHOTS = process.env.NOTATE_HISTORY !== "off";
-const IDENTITY = ["-c", "user.name=notate", "-c", "user.email=notate@localhost"];
+const FALLBACK_IDENTITY = ["-c", "user.name=notate", "-c", "user.email=notate@localhost"];
 // Separators git won't find in a commit subject or a path.
 const RECORD = "\u001e";
 const FIELD = "\u001f";
@@ -146,11 +146,21 @@ function describe(nameStatus: string): string {
   return `${changes.length} files: ${names}${changes.length > 3 ? ", …" : ""}`;
 }
 
+/**
+ * Your own git identity when you have one configured, so snapshots pushed to a
+ * remote are attributed to you; a placeholder only when git has no name set.
+ */
+async function identity(root: string): Promise<string[]> {
+  const email = await git(["config", "user.email"], root).catch(() => "");
+  const name = await git(["config", "user.name"], root).catch(() => "");
+  return email.trim() && name.trim() ? [] : FALLBACK_IDENTITY;
+}
+
 async function commitAll(root: string, subject?: string): Promise<HistoryCommit | null> {
   await git(["add", "-A"], root);
   const staged = await git(["diff", "--cached", "--name-status"], root);
   if (!staged.trim()) return null;
-  await git([...IDENTITY, "commit", "-m", subject ?? describe(staged), "-m", staged.trim()], root);
+  await git([...(await identity(root)), "commit", "-m", subject ?? describe(staged), "-m", staged.trim()], root);
   return parseCommits(await git(["log", "--max-count=1", LOG_FORMAT, "--name-only"], root))[0] ?? null;
 }
 
