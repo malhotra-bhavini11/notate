@@ -23,6 +23,15 @@ export const identifiersHref = "/identifiers";
 /** `/query?q=type:paper-review` */
 export const queryHref = (q?: string) => (q?.trim() ? `/query?q=${encodeURIComponent(q.trim())}` : "/query");
 export const queryApiUrl = (q: string) => `/api/query?q=${encodeURIComponent(q)}`;
+export const historyHref = "/history";
+/** `/api/history`, optionally for one note and one snapshot. */
+export const historyApiUrl = (p?: string, rev?: string) => {
+  const params = new URLSearchParams();
+  if (p) params.set("path", p);
+  if (rev) params.set("rev", rev);
+  const query = params.toString();
+  return query ? `/api/history?${query}` : "/api/history";
+};
 
 export const isNotePath = (p: string) => p.toLowerCase().endsWith(".md");
 export const isPdfPath = (p: string) => p.toLowerCase().endsWith(".pdf");
@@ -58,6 +67,7 @@ export type WorkspaceLocation =
   | { mode: "references" }
   | { mode: "identifiers" }
   | { mode: "query" }
+  | { mode: "history" }
   | { mode: "note"; note: string }
   | { mode: "file"; file: string }
   | { mode: "split"; file: string | null; note: string | null };
@@ -70,6 +80,7 @@ export function parseLocation(pathname: string, search: URLSearchParams): Worksp
   if (pathname === "/references") return { mode: "references" };
   if (pathname === "/identifiers") return { mode: "identifiers" };
   if (pathname === "/query") return { mode: "query" };
+  if (pathname === "/history") return { mode: "history" };
   const tagMatch = pathname.match(/^\/tags(?:\/(.+))?$/);
   if (tagMatch) return { mode: "tags", tag: tagMatch[1] ? joinSlug(tagMatch[1].split("/")) : null };
   const match = pathname.match(/^\/(notes|files)\/(.+)$/);
@@ -106,6 +117,7 @@ export function splitToggleHref(location: WorkspaceLocation): string {
     case "references":
     case "identifiers":
     case "query":
+    case "history":
       return splitHref({});
     case "split":
       if (location.note) return noteHref(location.note);

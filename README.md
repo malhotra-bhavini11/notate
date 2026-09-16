@@ -11,6 +11,15 @@ npm run dev      # http://127.0.0.1:3000
 
 On first run `workspace/` is created from `samples/workspace/`. It is git-ignored, so your notes stay out of the app repo. To keep notes elsewhere (e.g. a separate git repo or synced folder), set `WORKSPACE_DIR=/absolute/path`.
 
+Notes are written to disk as you type, so nothing depends on the app or the browser staying open.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `WORKSPACE_DIR` | `./workspace` | Where your notes live |
+| `NOTATE_SNAPSHOT_SECONDS` | `120` | Delay before a history snapshot after an edit |
+| `NOTATE_HISTORY` | on | `off` disables automatic snapshots (**Snapshot now** still works) |
+| `NOTATE_ALLOW_REMOTE` | unset | `1` skips the localhost-only check, e.g. behind a tunnel |
+
 ```bash
 npm test         # vitest: path safety, frontmatter round-trip, tree, notes
 npm run lint
@@ -158,6 +167,23 @@ A diagram that doesn't parse shows the error and the source instead of breaking 
 - **Inside a callout** everything else still works: maths, code blocks, links, tags and nested callouts.
 - **Unknown types** stay ordinary blockquotes, so notes written elsewhere aren't mangled.
 
+## History
+
+**History** (sidebar) keeps snapshots of your notes in a git repository inside the workspace folder, separate from the repository the app itself lives in. Saving is unaffected: notes are plain files written as you type, and history only adds versions you can read and restore.
+
+- **Turning it on:** the History page runs `git init` in your workspace and commits what is there. Nothing is sent anywhere.
+- **Automatic snapshots** run `NOTATE_SNAPSHOT_SECONDS` (2 minutes by default) after an edit, so a stretch of writing becomes one commit rather than one per save. Messages name what changed: "Update papers/deseq2.md", "3 files: a.md, b.md, c.md".
+- **Snapshot now** on the History page commits immediately.
+- **Per note:** the **History** tab beside Write and Preview lists that note's snapshots (including across renames), diffs the selected one against the file on disk, and restores it with one click. Frontmatter is part of the diff.
+- **Restoring never rewrites history:** the old version is written back as a new snapshot, so a restore can itself be undone.
+- **Off-machine backup:** add a remote in the workspace folder and push when you want to. The History page shows the remote once one is set; pushing stays a manual step, so nothing leaves your machine on its own.
+
+```bash
+cd workspace
+git remote add origin git@github.com:you/my-notes.git   # a private repo
+git push -u origin main
+```
+
 ## Code blocks
 
 Fenced code in notes is highlighted with Shiki (`github-dark-default`) and gets a header with the language or title and a **Copy** button.
@@ -186,6 +212,8 @@ counts = counts.dropna()  # [!code --]
 | `GET /api/notes?limit=20` | Recently modified notes with title, type, tags |
 | `GET /api/index` | All notes (title, type, tags), linkable files, tag counts and frontmatter field counts. Parsed notes are cached by mtime |
 | `GET /api/query?q=…` | `{ columns, rows: [{ path, title, values }], total, errors }` for a query. At most 500 rows |
+| `GET /api/history` | `{ status, commits }`. `?path=note.md` limits it to one note; `?path=…&rev=…` returns that note's text at that snapshot |
+| `POST /api/history` | `{ action: "init" \| "snapshot" \| "restore", path?, rev?, message? }` |
 | `POST /api/citations/lookup` | `{ query }` → metadata, suggested key, and `existingKey` if already in the library |
 | `GET /api/references` | Entries in `references.bib` with APA text, in-text form and BibTeX. `error` if the file can't be parsed |
 | `POST /api/references` | `{ query, key }`. Re-fetches the metadata (cached briefly) and appends to `references.bib`. `409` for a duplicate work or key |

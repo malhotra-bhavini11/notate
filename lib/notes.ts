@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { parseMarkdown, stringifyMarkdown } from "./frontmatter";
+import { scheduleSnapshot } from "./history";
 import { getIndexDTO } from "./link-index";
 import type { NoteDTO, NoteSummary, SaveNoteBody, SaveNoteResponse } from "./types";
 import { isPlainObject } from "./values";
@@ -67,6 +68,7 @@ export async function writeNote(segments: string[], body: SaveNoteBody): Promise
   }
 
   await writeFileAtomic(absolute, data);
+  scheduleSnapshot();
   const stat = await fs.stat(absolute);
   return { ok: true, path: relative, mtime: stat.mtimeMs };
 }

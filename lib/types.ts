@@ -86,6 +86,38 @@ export interface IndexDTO {
   fields: { name: string; count: number }[];
 }
 
+/** One snapshot in the workspace's history. */
+export interface HistoryCommit {
+  hash: string;
+  short: string;
+  /** ISO 8601, from git's author date. */
+  date: string;
+  subject: string;
+  /** Workspace-relative paths changed in this snapshot. */
+  files: string[];
+}
+
+export interface HistoryStatusDTO {
+  /** git is installed and runnable. */
+  git: boolean;
+  /** The workspace has its own repository. */
+  tracked: boolean;
+  /** Files changed since the last snapshot. */
+  pending: number;
+  commits: number;
+  last?: HistoryCommit;
+  /** `origin` URL, when one is set. */
+  remote?: string;
+  snapshotSeconds: number;
+  auto: boolean;
+  error?: string;
+}
+
+export interface HistoryDTO {
+  status: HistoryStatusDTO;
+  commits: HistoryCommit[];
+}
+
 export interface BacklinkDTO {
   path: string;
   title: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookPlus, Columns2, Database, FileText, Hash, Library, ListFilter, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
+import { BookPlus, Columns2, Database, FileText, Hash, History, Library, ListFilter, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
@@ -15,6 +15,7 @@ import { useWorkspaceLocation } from "@/components/use-workspace-location";
 import { useWorkspace } from "@/components/workspace-provider";
 import {
   activePaths,
+  historyHref,
   identifiersHref,
   queryHref,
   referencesHref,
@@ -149,6 +150,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ListFilter className="size-4 text-muted-foreground" />
             Query
           </Link>
+          <Link
+            href={historyHref}
+            onClick={closeIfNarrow}
+            title="Snapshots of your notes, and how to restore an earlier version"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+          >
+            <History className="size-4 text-muted-foreground" />
+            History
+          </Link>
         </div>
 
         <div className="p-2">
@@ -277,6 +287,8 @@ function LocationCrumbs({ location }: { location: WorkspaceLocation }) {
       return <span className="text-sm text-muted-foreground">Identifiers</span>;
     case "query":
       return <span className="text-sm text-muted-foreground">Query</span>;
+    case "history":
+      return <span className="text-sm text-muted-foreground">History</span>;
     case "tags":
       return (
         <span className="truncate text-sm text-muted-foreground">

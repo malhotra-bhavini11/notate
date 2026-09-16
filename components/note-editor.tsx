@@ -1,10 +1,11 @@
 "use client";
 
-import { Check, CircleAlert, Eye, LoaderCircle, Pencil } from "lucide-react";
+import { Check, CircleAlert, Eye, History, LoaderCircle, Pencil } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { BacklinksPanel } from "@/components/backlinks-panel";
 import { FrontmatterCard } from "@/components/frontmatter-card";
+import { NoteHistory } from "@/components/history";
 import { useLinkAutocomplete } from "@/components/link-autocomplete";
 import { MarkdownPreview } from "@/components/markdown-preview";
 import { registerNoteInserter } from "@/components/note-insert";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const AUTOSAVE_DELAY_MS = 1000;
 
 type SaveStatus = "saved" | "unsaved" | "saving" | "error";
+type Mode = "write" | "preview" | "history";
 interface Doc {
   frontmatter: Frontmatter;
   content: string;
@@ -58,7 +60,7 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
   const [doc, setDoc] = useState<Doc>({ frontmatter: {}, content: "" });
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"write" | "preview">("write");
+  const [mode, setMode] = useState<Mode>("write");
 
   // Refs let the debounced save always see the newest edit without re-subscribing.
   const latest = useRef(doc);
@@ -67,6 +69,8 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
   const inFlight = useRef(false);
   const queued = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Bumped to re-read the file, e.g. after restoring an earlier version.
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +91,7 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [path, reloadNonce]);
 
   const save = useCallback(async () => {
     clearTimeout(timer.current);
@@ -230,7 +234,7 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
       <FrontmatterCard frontmatter={doc.frontmatter} onChange={(frontmatter) => update({ frontmatter })} />
 
       <div className="mb-3 flex items-center justify-between gap-2">
-        <Tabs value={mode} onValueChange={(v) => setMode(v as "write" | "preview")}>
+        <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
           <TabsList>
             <TabsTrigger value="write">
               <Pencil />
@@ -240,12 +244,25 @@ export function NoteEditor({ path, onLoaded }: NoteEditorProps) {
               <Eye />
               Preview
             </TabsTrigger>
+            <TabsTrigger value="history" title="Earlier versions of this note">
+              <History />
+              History
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         <SaveIndicator status={status} error={saveError} onRetry={() => void save()} />
       </div>
 
-      {mode === "write" ? (
+      {mode === "history" ? (
+        <NoteHistory
+          path={path}
+          onRestored={() => {
+            setStatus("saved");
+            setReloadNonce((n) => n + 1);
+            void refresh();
+          }}
+        />
+      ) : mode === "write" ? (
         <div className="relative flex flex-1 flex-col">
           <textarea
             ref={textareaRef}
