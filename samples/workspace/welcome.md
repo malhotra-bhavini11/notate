@@ -39,6 +39,15 @@ Accessions link to their database automatically:
 
 Short or ambiguous IDs need a prefix, e.g. `PDB 1TUP`, `PMID: 25516281`, `taxid:9606`. **IDs** in the sidebar lists every identifier and the notes that mention it.
 
+## Queries
+**Query** in the sidebar finds notes by their frontmatter, tags, citations, IDs, and links, e.g. `type:paper-review tag:rna-seq -has:dataset year:>=2010 sort:-year`.
+
+A `query` code block keeps a live table in a note:
+
+```query title="Paper reviews without a dataset"
+type:paper-review -has:dataset sort:-year show:year,doi,tags
+```
+
 ## Markdown features
 | Feature | Syntax |
 |---|---|

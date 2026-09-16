@@ -82,6 +82,8 @@ export interface IndexDTO {
   /** Non-note files (PDFs, code, data) that `[[file.ext]]` links can target. */
   files: string[];
   tags: { tag: string; count: number }[];
+  /** Frontmatter keys with the number of notes that set them, for building queries. */
+  fields: { name: string; count: number }[];
 }
 
 export interface BacklinkDTO {

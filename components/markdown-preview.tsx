@@ -12,6 +12,7 @@ import remarkMath from "remark-math";
 import type { PluggableList } from "unified";
 
 import { CodeBlock } from "@/components/code-block";
+import { QueryBlock } from "@/components/query-results";
 import { useNoteLinks } from "@/components/use-note-links";
 import { useWorkspace } from "@/components/workspace-provider";
 import { ACCESSION_TYPE_BY_KEY } from "@/lib/accessions";
@@ -19,13 +20,14 @@ import { formatAnchor, parseAnchor } from "@/lib/anchors";
 import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
 import { extractLinksAndTags, parseCitation, remarkWikiTokens } from "@/lib/markdown-tokens";
 import { noteHref, referencesHref, tagHref } from "@/lib/paths";
+import { rehypeQueryBlocks } from "@/lib/query";
 import type { ReferenceDTO } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens];
-// KaTeX first: display math also arrives as <pre><code class="language-math">,
-// and the highlighter must not turn equations into code blocks.
-const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeCodeFence];
+// KaTeX and query blocks first: display math and ```query also arrive as
+// <pre><code>, and the highlighter must not turn them into code blocks.
+const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeQueryBlocks, rehypeCodeFence];
 
 interface MarkdownPreviewProps {
   content: string;
@@ -78,6 +80,14 @@ const COMPONENTS: Components = {
         {children}
       </a>
     );
+  },
+  div({ node, children, ...props }) {
+    const properties = node?.properties ?? {};
+    if (typeof properties.dataQuery === "string") {
+      const title = typeof properties.dataQueryTitle === "string" ? properties.dataQueryTitle : undefined;
+      return <QueryBlock query={properties.dataQuery} title={title} />;
+    }
+    return <div {...props}>{children}</div>;
   },
   pre({ node, children, ...props }) {
     const properties = node?.properties ?? {};

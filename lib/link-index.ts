@@ -6,6 +6,7 @@ import path from "node:path";
 import { parseMarkdown } from "./frontmatter";
 import { createResolver, type Resolver } from "./link-resolver";
 import { extractLinksAndTags, normalizeTag, type ExtractedLink } from "./markdown-tokens";
+import { countFields, parseQuery, type QueryableNote, type QueryResult, runQuery } from "./query";
 import { buildTree } from "./tree";
 import { flattenTree } from "./tree-utils";
 import type { BacklinkDTO, IndexDTO } from "./types";
@@ -16,6 +17,8 @@ interface IndexedNote {
   path: string;
   title: string;
   type?: string;
+  /** Empty when the YAML is malformed. */
+  frontmatter: Record<string, unknown>;
   /** Frontmatter and inline tags, normalized and de-duplicated. */
   tags: string[];
   links: ExtractedLink[];
@@ -50,6 +53,7 @@ async function indexNote(root: string, relPath: string, mtime: number): Promise<
     path: relPath,
     title: typeof frontmatter.title === "string" && frontmatter.title.trim() ? frontmatter.title : fallbackTitle,
     type: typeof frontmatter.type === "string" ? frontmatter.type : undefined,
+    frontmatter,
     tags: [...new Set([...toTags(frontmatter.tags).map(normalizeTag), ...tags])].filter(Boolean),
     links,
     citations,
@@ -118,7 +122,24 @@ export async function getIndexDTO(): Promise<IndexDTO> {
       .sort((a, b) => b.mtime - a.mtime),
     files: files.filter((f) => f.ext !== "md").map((f) => f.path),
     tags: [...counts].map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)),
+    fields: countFields(notes.map((n) => n.frontmatter)),
   };
+}
+
+/** Runs a frontmatter query (see lib/query.ts) over every note. */
+export async function queryNotes(input: string): Promise<QueryResult> {
+  const { notes, resolve } = await getLinkIndex();
+  const queryable: QueryableNote[] = notes.map((n) => ({
+    path: n.path,
+    title: n.title,
+    frontmatter: n.frontmatter,
+    tags: n.tags,
+    citations: n.citations,
+    accessions: n.accessions,
+    links: [...new Set(n.links.map((l) => resolve(l.target, n.path)).filter((p): p is string => p !== null))],
+    mtime: n.mtime,
+  }));
+  return runQuery(parseQuery(input), queryable, { resolve: (target) => resolve(target) });
 }
 
 /** Notes whose `[[links]]` resolve to `segments`, with the lines that mention it. */

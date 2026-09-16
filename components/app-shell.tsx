@@ -1,6 +1,6 @@
 "use client";
 
-import { BookPlus, Columns2, Database, FileText, Hash, Library, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
+import { BookPlus, Columns2, Database, FileText, Hash, Library, ListFilter, NotebookPen, PanelLeft, Plus, RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
@@ -16,6 +16,7 @@ import { useWorkspace } from "@/components/workspace-provider";
 import {
   activePaths,
   identifiersHref,
+  queryHref,
   referencesHref,
   splitToggleHref,
   tagHref,
@@ -111,11 +112,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <div className="flex gap-1 border-b px-2 py-1.5">
+        <div className="grid grid-cols-2 gap-x-1 border-b px-2 py-1.5">
           <Link
             href={referencesHref()}
             onClick={closeIfNarrow}
-            className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
           >
             <Library className="size-4 text-muted-foreground" />
             References
@@ -124,7 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link
             href={tagHref()}
             onClick={closeIfNarrow}
-            className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
           >
             <Hash className="size-4 text-muted-foreground" />
             Tags
@@ -133,11 +134,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link
             href={identifiersHref}
             onClick={closeIfNarrow}
-            title="Identifiers: datasets, genes, proteins, and other database IDs in your notes"
+            title="Datasets, genes, proteins, and other database IDs in your notes"
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
           >
             <Database className="size-4 text-muted-foreground" />
-            IDs
+            Identifiers
+          </Link>
+          <Link
+            href={queryHref()}
+            onClick={closeIfNarrow}
+            title="Find notes by frontmatter, tags, citations, and links"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent"
+          >
+            <ListFilter className="size-4 text-muted-foreground" />
+            Query
           </Link>
         </div>
 
@@ -265,6 +275,8 @@ function LocationCrumbs({ location }: { location: WorkspaceLocation }) {
       return <span className="text-sm text-muted-foreground">References</span>;
     case "identifiers":
       return <span className="text-sm text-muted-foreground">Identifiers</span>;
+    case "query":
+      return <span className="text-sm text-muted-foreground">Query</span>;
     case "tags":
       return (
         <span className="truncate text-sm text-muted-foreground">

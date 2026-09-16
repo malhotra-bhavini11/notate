@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { getBacklinks, getIndexDTO } from "@/lib/link-index";
+import { getBacklinks, getIndexDTO, queryNotes } from "@/lib/link-index";
 import { WorkspaceError } from "@/lib/workspace";
 
 let root: string;
@@ -61,6 +61,18 @@ describe("getIndexDTO", () => {
     expect(index.files).toEqual(["papers/paper.pdf"]);
     expect(index.tags.find((t) => t.tag === "stats")).toEqual({ tag: "stats", count: 1 });
     expect(index.notes.find((n) => n.path === "broken.md")!.title).toBe("broken");
+  });
+});
+
+describe("queryNotes", () => {
+  it("queries frontmatter, merged tags and resolved links across the workspace", async () => {
+    await write("reviews/qc.md", "---\ntitle: QC review\ntype: code-review\nrepo: pipelines\n---\nSee [[DESeq2]].\n");
+    expect((await queryNotes("type:code-review")).rows.map((r) => r.path)).toEqual(["reviews/qc.md"]);
+    expect((await queryNotes("tag:stats -has:type")).rows.map((r) => r.path)).toEqual(["papers/deseq2.md"]);
+    const linking = await queryNotes("links:papers/deseq2.md sort:path show:repo");
+    expect(linking.rows.map((r) => r.path)).toEqual(["broken.md", "reviews/pipeline.md", "reviews/qc.md"]);
+    expect(linking.rows[2].values).toEqual({ repo: "pipelines" });
+    expect((await getIndexDTO()).fields.find((f) => f.name === "title")?.count).toBeGreaterThanOrEqual(3);
   });
 });
 

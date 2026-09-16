@@ -90,6 +90,40 @@ How matching works:
 - **Frontmatter:** values that are identifiers get a link icon. Bare values count too when the field name says what they are (`pmid`, `arxiv`, `pdb`, `taxid`, `gene_id`).
 - **`/identifiers`:** lists every ID across notes, grouped by kind, with the notes that mention it.
 
+## Queries
+
+**Query** (sidebar, `/query?q=…`) finds notes by frontmatter and by what they contain. A `query` fence in a note renders the same results as a live table, which updates as notes change:
+
+````markdown
+```query title="Reading list"
+type:paper-review tag:scrna-seq -has:dataset year:>=2020 sort:-year show:authors,year,doi
+```
+````
+
+| Syntax | Matches |
+|---|---|
+| `type:paper-review` | Field equals the value, ignoring case. For lists (`authors`), any item. |
+| `type:experiment,theorem` | Any of the values |
+| `title:~deseq`, `status:run*` | Contains; wildcard |
+| `year:>=2020`, `year:2019..2023` | Comparison (`>` `>=` `<` `<=`) or inclusive range. Numbers compare as numbers; other values as text by prefix, so `date:<=2026-09` includes all of September. |
+| `has:doi`, `-has:dataset`, `doi:*` | Field set / missing. Empty strings and lists count as missing. |
+| `meta.version`, `authors.0` | Nested key or list item |
+| `journal:"Genome Biology"` | Quoted value with spaces |
+| `tag:bio`, `#bio` | Frontmatter or inline tag, including nested `bio/…` |
+| `in:papers` | Notes in a folder |
+| `cites:love2014moderated` | Notes citing a key |
+| `mentions:GSE60450`, `mentions:GSE*` | Notes mentioning a database ID |
+| `links:deseq2-love-2014`, `links:pipelines/qc.py` | Notes linking to a note or file, resolved like `[[links]]` |
+| `modified:>=2026-09-01` | Last modified date |
+| `-term` | Excludes matches of any term |
+| `deseq` | Title or path contains the word |
+| `sort:-year,title`, `limit:20`, `show:year,doi` | Order (`-` for descending; default newest first), row count, and columns |
+
+- **Combining:** terms combine with AND. A comma inside one value means OR.
+- **Columns:** without `show:`, the table shows the fields the query filters and sorts on. Values that name a workspace file, a DOI, or another identifier become links.
+- **Query page:** lists every frontmatter field with how many notes set it. Click a column header to sort. **Copy CSV** exports the results, and **Copy as note block** gives you a fence to paste.
+- **Mistakes:** an unknown directive value such as `limit:abc` is reported above the table rather than failing the query.
+
 ## Code blocks
 
 Fenced code in notes is highlighted with Shiki (`github-dark-default`) and gets a header with the language or title and a **Copy** button.
@@ -116,7 +150,8 @@ counts = counts.dropna()  # [!code --]
 |---|---|
 | `GET /api/fs/tree` | Nested JSON tree of the workspace (`name, path, type, ext, mtime, size, children`) |
 | `GET /api/notes?limit=20` | Recently modified notes with title, type, tags |
-| `GET /api/index` | All notes (title, type, tags), linkable files and tag counts. Parsed notes are cached by mtime |
+| `GET /api/index` | All notes (title, type, tags), linkable files, tag counts and frontmatter field counts. Parsed notes are cached by mtime |
+| `GET /api/query?q=…` | `{ columns, rows: [{ path, title, values }], total, errors }` for a query. At most 500 rows |
 | `POST /api/citations/lookup` | `{ query }` → metadata, suggested key, and `existingKey` if already in the library |
 | `GET /api/references` | Entries in `references.bib` with APA text, in-text form and BibTeX. `error` if the file can't be parsed |
 | `POST /api/references` | `{ query, key }`. Re-fetches the metadata (cached briefly) and appends to `references.bib`. `409` for a duplicate work or key |
