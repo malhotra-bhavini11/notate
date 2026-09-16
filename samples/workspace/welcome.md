@@ -64,6 +64,15 @@ Start a blockquote with `[!type]` for a callout. `[!theorem]`, `[!lemma]`, `[!de
 > [!warning] Raw counts only
 > DESeq2 models raw counts. Feeding it normalised values breaks the variance assumptions.
 
+## Figures
+Paste a screenshot or drop an image file into the editor and it is saved into `assets/` and linked for you. An image on a line of its own becomes a numbered figure; the caption comes from the title in quotes, or the alt text.
+
+```markdown
+![alt text](assets/plot.png "Caption shown under the figure")
+```
+
+See [[deseq2-love-2014]] for one in place.
+
 ## Markdown features
 | Feature | Syntax |
 |---|---|

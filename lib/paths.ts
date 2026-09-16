@@ -15,6 +15,8 @@ export const fileHref = (p: string, anchor?: FileAnchor | null) => `/files/${enc
 export const noteApiUrl = (p: string) => `/api/notes/${encodePath(p)}`;
 export const rawFileUrl = (p: string) => `/api/files/raw/${encodePath(p)}`;
 export const backlinksApiUrl = (p: string) => `/api/backlinks/${encodePath(p)}`;
+/** Where pasted and dropped images are posted. */
+export const imageUploadUrl = "/api/files/upload";
 /** `/tags` for the tag index, `/tags/bio/rna-seq` for one (nested) tag. */
 export const tagHref = (tag?: string) => (tag ? `/tags/${encodePath(tag)}` : "/tags");
 /** `/references`, or `/references#love2014moderated` to jump to one entry. */

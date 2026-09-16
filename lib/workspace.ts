@@ -126,13 +126,13 @@ export async function resolveInWorkspace(segments: string[]): Promise<ResolvedPa
  * note. OneDrive and antivirus can briefly lock files on Windows, so the rename
  * is retried before falling back to a direct write.
  */
-export async function writeFileAtomic(absolute: string, data: string): Promise<void> {
+export async function writeFileAtomic(absolute: string, data: string | Uint8Array): Promise<void> {
   await fs.mkdir(path.dirname(absolute), { recursive: true });
   const tmp = path.join(
     path.dirname(absolute),
     `.${path.basename(absolute)}.${process.pid}.${Date.now()}.tmp`,
   );
-  await fs.writeFile(tmp, data, "utf8");
+  await fs.writeFile(tmp, data, typeof data === "string" ? "utf8" : undefined);
 
   for (let attempt = 0; attempt < 5; attempt++) {
     try {

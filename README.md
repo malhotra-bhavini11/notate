@@ -150,6 +150,14 @@ type:paper-review tag:scrna-seq -has:dataset year:>=2020 sort:-year show:authors
 - **Query page:** lists every frontmatter field with how many notes set it. Click a column header to sort. **Copy CSV** exports the results, and **Copy as note block** gives you a fence to paste.
 - **Mistakes:** an unknown directive value such as `limit:abc` is reported above the table rather than failing the query.
 
+## Figures
+
+- **Adding one:** paste a screenshot, or drop an image file, into the editor. It is saved under `assets/` in the workspace and linked at the cursor. The file is named after the note (`assets/deseq2-love-2014-dispersion-plot.png`; a pasted image gets a timestamp instead), and an existing file is never overwritten.
+- **Accepted:** PNG, JPEG, GIF, WebP, AVIF, BMP and SVG, up to 20 MB. The bytes have to match the type, so a renamed file is refused. SVGs are served under a locked-down CSP, since they can carry script.
+- **Writing one by hand:** `![alt text](assets/plot.png "Caption")`. Paths resolve the way `[[links]]` do — relative to the note, then from the workspace root, then by file name — so `![](plot.png)` finds `assets/plot.png`.
+- **Figures:** an image alone on a line becomes a numbered `<figure>` with the caption underneath, taken from the title in quotes or else the alt text. An image with text beside it stays inline.
+- **Viewing:** opening an image shows it with its dimensions and a **Fit / Actual size** toggle, plus **Markdown** to copy a link and, in split view, **Insert figure** to drop it into the note.
+
 ## Note templates
 
 **New note** (`+` in the sidebar, or `Ctrl+Alt+N`) starts from a template; each sets a `type` in the frontmatter, so queries like `type:concept` work straight away.
@@ -255,7 +263,8 @@ counts = counts.dropna()  # [!code --]
 | `GET /api/backlinks/[...slug]` | Notes linking to a note or file, with `{ line, context }` for each mention |
 | `GET /api/notes/[...slug]` | `{ path, frontmatter, content, mtime }` for a `.md` file |
 | `POST /api/notes/[...slug]` | JSON `{ frontmatter?, content, createOnly? }`; atomic write; `409` if `createOnly` and the file exists |
-| `GET /api/files/raw/[...slug]` | UTF-8 text for code/data files, `application/pdf` for PDFs; `415` for other binaries, `413` over 50 MB |
+| `GET /api/files/raw/[...slug]` | UTF-8 text for code/data files, `application/pdf` for PDFs, the image type for figures; `415` for other binaries, `413` over 50 MB |
+| `POST /api/files/upload` | Multipart `file` (plus optional `note`, `folder`) → `{ path, bytes }`. Images only, checked by their bytes, under 20 MB |
 
 ### Safety
 The routes read and write real files, so:
@@ -275,5 +284,5 @@ app/split            dual-pane view (file left, note right)
 components/          app shell, file tree, editor, KaTeX/GFM preview, callouts, diagrams, queries, dialogs, split panes
 components/viewers/  react-pdf viewer, code viewer
 lib/                 workspace path guard, tree, notes, frontmatter, templates
-samples/workspace/   seed notes copied on first run
+samples/workspace/   seed notes copied on first run (with assets/ for figures)
 ```

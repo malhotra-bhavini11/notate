@@ -15,6 +15,8 @@ export const GET = withApi<Ctx>(async (_request, { params }) => {
       "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
       // Served as text/plain even for .html/.svg, and never sniffed into something executable.
       "X-Content-Type-Options": "nosniff",
+      // SVGs can hold script; this stops one from doing anything if opened directly.
+      ...(file.sandbox ? { "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" } : {}),
       "Cache-Control": "no-store",
     },
   });

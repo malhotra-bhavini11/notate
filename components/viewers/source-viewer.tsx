@@ -3,7 +3,9 @@
 import dynamic from "next/dynamic";
 
 import { CodeViewer } from "@/components/viewers/code-viewer";
+import { ImageViewer } from "@/components/viewers/image-viewer";
 import type { FileAnchor } from "@/lib/anchors";
+import { isImagePath } from "@/lib/images";
 import { isPdfPath, rawFileUrl } from "@/lib/paths";
 
 // pdf.js touches browser-only APIs at import time, so it never runs on the server.
@@ -20,11 +22,11 @@ interface SourceViewerProps {
   anchorHref?: (anchor: FileAnchor | null) => string;
 }
 
-/** Left-pane content: react-pdf for PDFs, the code viewer for everything else. */
+/** Left-pane content: react-pdf for PDFs, the image viewer for figures, the code viewer otherwise. */
 export function SourceViewer({ path, anchor, anchorHref }: SourceViewerProps) {
-  return isPdfPath(path) ? (
-    <PdfViewer url={rawFileUrl(path)} path={path} page={anchor?.kind === "page" ? anchor.page : null} />
-  ) : (
-    <CodeViewer path={path} anchor={anchor} anchorHref={anchorHref} />
-  );
+  if (isPdfPath(path)) {
+    return <PdfViewer url={rawFileUrl(path)} path={path} page={anchor?.kind === "page" ? anchor.page : null} />;
+  }
+  if (isImagePath(path)) return <ImageViewer path={path} />;
+  return <CodeViewer path={path} anchor={anchor} anchorHref={anchorHref} />;
 }

@@ -26,6 +26,8 @@ $$
 where $s_j$ is a sample size factor and $\alpha_i$ a gene-wise dispersion, so that
 $\operatorname{Var}(K_{ij}) = \mu_{ij} + \alpha_i \mu_{ij}^2$.
 
+![Gene-wise dispersion estimates against mean expression, with the fitted trend](assets/dispersion-trend.png "Gene-wise estimates (grey) and the fitted mean-dispersion trend (blue) they are shrunk towards")
+
 ## Statistical approach
 | Step | Idea |
 |---|---|

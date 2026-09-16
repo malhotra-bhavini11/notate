@@ -12,7 +12,8 @@ import { registerNoteInserter } from "@/components/note-insert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/workspace-provider";
-import { noteApiUrl } from "@/lib/paths";
+import { imageMarkdown, isImagePath } from "@/lib/images";
+import { imageUploadUrl, noteApiUrl } from "@/lib/paths";
 import { getTemplate } from "@/lib/templates";
 import type { Frontmatter, NoteDTO, SaveNoteBody } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,8 @@ export function NoteEditor({ path, onLoaded, focusLine }: NoteEditorProps) {
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("write");
+  const [upload, setUpload] = useState<{ state: "uploading" | "error"; name: string; message?: string } | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   // Refs let the debounced save always see the newest edit without re-subscribing.
   const latest = useRef(doc);
@@ -172,14 +175,12 @@ export function NoteEditor({ path, onLoaded, focusLine }: NoteEditorProps) {
     el.scrollTop = Math.max(0, (focusLine - 1) * lineHeight - el.clientHeight / 2);
   }, [load.kind, focusLine, doc.content]);
 
-  // Accept "Insert link/snippet" from the code or PDF viewer in split view.
-  useEffect(() => {
-    if (load.kind !== "ready") return;
-    return registerNoteInserter((text) => {
+  /** Drops text in at the caret: blocks get their own paragraph, links just a space. */
+  const insertAtCaret = useCallback(
+    (text: string) => {
       const content = latest.current.content;
       const at = Math.min(lastCaret.current ?? content.length, content.length);
       const before = content.slice(0, at);
-      // Blocks (snippets) start on their own paragraph; inline links just need a space.
       const block = text.includes("\n");
       let lead = "";
       if (block && before && !before.endsWith("\n\n")) lead = before.endsWith("\n") ? "\n" : "\n\n";
@@ -188,8 +189,47 @@ export function NoteEditor({ path, onLoaded, focusLine }: NoteEditorProps) {
       pendingCaret.current = at + inserted.length;
       setMode("write");
       update({ content: before + inserted + content.slice(at) });
-    });
-  }, [load.kind, update]);
+    },
+    [update],
+  );
+
+  // Accept "Insert link/snippet" from the code or PDF viewer in split view.
+  useEffect(() => {
+    if (load.kind !== "ready") return;
+    return registerNoteInserter(insertAtCaret);
+  }, [load.kind, insertAtCaret]);
+
+  /** Saves pasted or dropped images into the workspace and links them here. */
+  const addImages = useCallback(
+    async (files: File[]) => {
+      for (const file of files) {
+        setUpload({ state: "uploading", name: file.name || "image" });
+        try {
+          const form = new FormData();
+          form.append("file", file);
+          form.append("note", path);
+          const res = await fetch(imageUploadUrl, { method: "POST", body: form });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error ?? res.statusText);
+          // A named file makes a reasonable first caption; a pasted screenshot doesn't.
+          const alt = /^image\.\w+$/i.test(file.name) ? "" : file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+          insertAtCaret(`${imageMarkdown(json.path, alt)}\n`);
+          setUpload(null);
+          void refresh();
+        } catch (err) {
+          setUpload({
+            state: "error",
+            name: file.name || "image",
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    },
+    [path, insertAtCaret, refresh],
+  );
+
+  const imagesFrom = (list: FileList | null | undefined) =>
+    [...(list ?? [])].filter((file) => file.type.startsWith("image/") || isImagePath(file.name));
 
   // Warn before closing the tab with unsaved edits; flush pending edits when navigating away in-app.
   useEffect(() => {
@@ -301,13 +341,61 @@ export function NoteEditor({ path, onLoaded, focusLine }: NoteEditorProps) {
             }}
             onBlur={autocomplete.close}
             onScroll={autocomplete.close}
+            onPaste={(e) => {
+              // A screenshot from the clipboard becomes a file in the workspace.
+              const images = imagesFrom(e.clipboardData?.files);
+              if (images.length === 0) return;
+              e.preventDefault();
+              lastCaret.current = e.currentTarget.selectionStart;
+              void addImages(images);
+            }}
+            onDragOver={(e) => {
+              if (!e.dataTransfer?.types.includes("Files")) return;
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              const images = imagesFrom(e.dataTransfer?.files);
+              setDragging(false);
+              if (images.length === 0) return;
+              e.preventDefault();
+              void addImages(images);
+            }}
             spellCheck
             aria-label="Note body (Markdown)"
             aria-autocomplete="list"
-            placeholder="Write in Markdown. [[Link a note]], #tags, $inline math$, | tables |, ```code```"
-            className="min-h-[60vh] w-full flex-1 resize-none rounded-xl border bg-background p-4 font-mono text-sm leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            placeholder="Write in Markdown. [[Link a note]], #tags, $inline math$, | tables |, ```code```. Paste or drop an image to add a figure."
+            className={cn(
+              "min-h-[60vh] w-full flex-1 resize-none rounded-xl border bg-background p-4 font-mono text-sm leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+              dragging && "border-sky-500 ring-3 ring-sky-500/30",
+            )}
           />
           {autocomplete.popup()}
+          {dragging && (
+            <p className="pointer-events-none absolute inset-x-0 top-2 mx-auto w-fit rounded-full bg-sky-600 px-3 py-1 text-xs text-white shadow">
+              Drop to add the image to this note
+            </p>
+          )}
+          {upload && (
+            <p
+              role="status"
+              className={cn(
+                "mt-2 flex items-center gap-1.5 text-xs",
+                upload.state === "error" ? "text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {upload.state === "uploading" ? (
+                <>
+                  <LoaderCircle className="size-3.5 animate-spin" /> Saving {upload.name}…
+                </>
+              ) : (
+                <>
+                  <CircleAlert className="size-3.5" /> Couldn&apos;t add {upload.name}: {upload.message}
+                </>
+              )}
+            </p>
+          )}
         </div>
       ) : (
         <div className="min-h-[60vh] rounded-xl border p-6">

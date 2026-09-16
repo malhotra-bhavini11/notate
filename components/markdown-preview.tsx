@@ -21,9 +21,10 @@ import { ACCESSION_TYPE_BY_KEY } from "@/lib/accessions";
 import { formatAnchor, parseAnchor } from "@/lib/anchors";
 import { remarkCallouts } from "@/lib/callouts";
 import { rehypeFenceBlocks } from "@/lib/fence-blocks";
+import { rehypeFigures } from "@/lib/figures";
 import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
 import { extractLinksAndTags, parseCitation, remarkWikiTokens } from "@/lib/markdown-tokens";
-import { noteHref, referencesHref, tagHref } from "@/lib/paths";
+import { noteHref, rawFileUrl, referencesHref, tagHref } from "@/lib/paths";
 import type { ReferenceDTO } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens, remarkCallouts]
 // KaTeX and the self-rendered fences first: display math, ```query and
 // ```mermaid also arrive as <pre><code>, and the highlighter must not turn
 // them into code blocks.
-const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeFenceBlocks, rehypeCodeFence];
+const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeFenceBlocks, rehypeFigures, rehypeCodeFence];
 
 interface MarkdownPreviewProps {
   content: string;
@@ -110,6 +111,28 @@ const COMPONENTS: Components = {
       </Callout>
     );
   },
+  img({ node, src, alt, title, ...props }) {
+    void props;
+    const figure = Number(node?.properties?.dataFigure) || undefined;
+    return <NoteImage src={typeof src === "string" ? src : ""} alt={alt ?? ""} title={title} figure={figure} />;
+  },
+  figure({ node, children, ...props }) {
+    void node;
+    return (
+      <figure {...props} className="not-prose my-6 flex flex-col items-center gap-2">
+        {children}
+      </figure>
+    );
+  },
+  figcaption({ node, children, ...props }) {
+    const number = Number(node?.properties?.dataFigure) || undefined;
+    return (
+      <figcaption {...props} className="max-w-prose text-center text-sm text-muted-foreground">
+        {number !== undefined && <span className="font-medium text-foreground">Figure {number}. </span>}
+        {children}
+      </figcaption>
+    );
+  },
   pre({ node, children, ...props }) {
     const properties = node?.properties ?? {};
     return (
@@ -176,6 +199,39 @@ function MarkdownBody({ content, rehypePlugins }: { content: string; rehypePlugi
     <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={rehypePlugins} components={COMPONENTS}>
       {content}
     </ReactMarkdown>
+  );
+}
+
+/**
+ * `![caption](plot.png)` — the path resolves the same way a `[[link]]` does, so
+ * `assets/plot.png`, `../assets/plot.png` and a bare `plot.png` all work.
+ */
+function NoteImage({ src, alt, title, figure }: { src: string; alt: string; title?: string; figure?: number }) {
+  const fromPath = useContext(FromPathContext);
+  const { resolve, ready } = useNoteLinks();
+  const external = /^(https?:|data:)/i.test(src);
+  const resolved = external || !ready ? null : resolve(decodeURI(src), fromPath);
+
+  if (!external && ready && !resolved) {
+    return (
+      <span className="inline-block rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+        Image not found: <code className="text-xs">{src}</code>
+      </span>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- workspace files, not optimisable static assets
+    <img
+      src={external ? src : resolved ? rawFileUrl(resolved) : ""}
+      alt={alt}
+      title={title}
+      loading="lazy"
+      className={cn(
+        "mx-auto h-auto max-w-full rounded-lg border bg-white",
+        figure === undefined && "my-1 inline-block align-middle",
+      )}
+    />
   );
 }
 
