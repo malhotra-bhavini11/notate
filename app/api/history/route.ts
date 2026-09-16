@@ -1,5 +1,5 @@
 import { withApi } from "@/lib/http";
-import { getStatus, initHistory, listCommits, readAtRevision, restore, snapshot } from "@/lib/history";
+import { getStatus, initHistory, listCommits, push, readAtRevision, restore, snapshot } from "@/lib/history";
 import { WorkspaceError } from "@/lib/workspace";
 
 const segmentsOf = (path: string) => path.split("/").filter(Boolean);
@@ -26,7 +26,7 @@ export const GET = withApi(async (request: Request) => {
   return Response.json({ status, commits }, { headers: { "Cache-Control": "no-store" } });
 });
 
-/** POST /api/history — `{ action: "init" | "snapshot" | "restore", path?, rev? }`. */
+/** POST /api/history — `{ action: "init" | "snapshot" | "push" | "restore", path?, rev? }`. */
 export const POST = withApi(async (request: Request) => {
   if (!request.headers.get("content-type")?.includes("application/json")) {
     throw new WorkspaceError("Content-Type must be application/json", 415);
@@ -42,12 +42,16 @@ export const POST = withApi(async (request: Request) => {
       const commit = await snapshot(body.message?.trim() || undefined);
       return Response.json({ commit, status: await getStatus() });
     }
+    case "push": {
+      const result = await push();
+      return Response.json({ ...result, status: await getStatus() });
+    }
     case "restore": {
       if (!body.path || !body.rev) throw new WorkspaceError("`restore` needs `path` and `rev`", 400);
       const restored = await restore(segmentsOf(body.path), body.rev);
       return Response.json({ ...restored, status: await getStatus() });
     }
     default:
-      throw new WorkspaceError("`action` must be init, snapshot, or restore", 400);
+      throw new WorkspaceError("`action` must be init, snapshot, push, or restore", 400);
   }
 });

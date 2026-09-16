@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, FileText, GitCommitVertical, LoaderCircle } from "lucide-react";
+import { Camera, CloudUpload, FileText, GitCommitVertical, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -14,20 +14,23 @@ import type { HistoryStatusDTO } from "@/lib/types";
 export function HistoryView() {
   const { status, commits, error, loading, reload } = useHistory();
   const { refresh } = useWorkspace();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"snapshot" | "push" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pushed, setPushed] = useState<string | null>(null);
 
-  async function snapshotNow() {
-    setBusy(true);
+  async function run(action: "snapshot" | "push") {
+    setBusy(action);
     setActionError(null);
+    setPushed(null);
     try {
-      await post({ action: "snapshot" });
+      const result = await post<{ output?: string }>({ action });
+      if (action === "push") setPushed(result.output ?? "Pushed");
       reload();
       void refresh();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : String(err));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -55,8 +58,9 @@ export function HistoryView() {
 
       {status?.tracked && (
         <>
-          <StatusCard status={status} busy={busy} onSnapshot={snapshotNow} />
+          <StatusCard status={status} busy={busy} onSnapshot={() => run("snapshot")} onPush={() => run("push")} />
           {actionError && <p className="mt-2 text-sm text-destructive">{actionError}</p>}
+          {pushed && <p className="mt-2 text-sm text-muted-foreground">{pushed}</p>}
 
           {commits.length === 0 ? (
             <p className="mt-6 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -94,8 +98,20 @@ export function HistoryView() {
   );
 }
 
-function StatusCard({ status, busy, onSnapshot }: { status: HistoryStatusDTO; busy: boolean; onSnapshot: () => void }) {
+function StatusCard({
+  status,
+  busy,
+  onSnapshot,
+  onPush,
+}: {
+  status: HistoryStatusDTO;
+  busy: "snapshot" | "push" | null;
+  onSnapshot: () => void;
+  onPush: () => void;
+}) {
   const minutes = Math.round(status.snapshotSeconds / 60);
+  // No upstream yet means nothing has been pushed, so everything is unpushed.
+  const unpushed = status.ahead ?? status.commits;
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border bg-muted/30 p-4 text-sm">
       <span>
@@ -111,15 +127,24 @@ function StatusCard({ status, busy, onSnapshot }: { status: HistoryStatusDTO; bu
           ? `Snapshots run ${minutes < 1 ? `${status.snapshotSeconds} seconds` : `${minutes} minute${minutes === 1 ? "" : "s"}`} after an edit`
           : "Automatic snapshots are off (NOTATE_HISTORY=off)"}
       </span>
+      <span className="ml-auto flex gap-2">
+        <Button size="sm" variant="outline" disabled={busy !== null || status.pending === 0} onClick={onSnapshot}>
+          {busy === "snapshot" ? <LoaderCircle className="animate-spin" /> : <Camera />}
+          Snapshot now
+        </Button>
+        {status.remote && (
+          <Button size="sm" variant="outline" disabled={busy !== null || unpushed === 0} onClick={onPush}>
+            {busy === "push" ? <LoaderCircle className="animate-spin" /> : <CloudUpload />}
+            {unpushed > 0 ? `Push ${unpushed}` : "Pushed"}
+          </Button>
+        )}
+      </span>
       {status.remote && (
         <span className="w-full truncate text-xs text-muted-foreground" title={status.remote}>
-          Remote: <code>{status.remote}</code>. Push from a terminal in the workspace folder.
+          Backing up to <code>{status.remote}</code>
+          {status.ahead === undefined && " — nothing pushed yet"}
         </span>
       )}
-      <Button size="sm" variant="outline" className="ml-auto" disabled={busy || status.pending === 0} onClick={onSnapshot}>
-        {busy ? <LoaderCircle className="animate-spin" /> : <Camera />}
-        Snapshot now
-      </Button>
     </div>
   );
 }

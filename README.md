@@ -177,13 +177,14 @@ A diagram that doesn't parse shows the error and the source instead of breaking 
 - **Per note:** the **History** tab beside Write and Preview lists that note's snapshots (including across renames), diffs the selected one against the file on disk, and restores it with one click. Frontmatter is part of the diff.
 - **Restoring never rewrites history:** the old version is written back as a new snapshot, so a restore can itself be undone.
 - **Who the snapshots are by:** your own `git config user.name` / `user.email` when they're set, so pushed snapshots are attributed to you; otherwise a local `notate` placeholder.
-- **Off-machine backup:** add a remote in the workspace folder and push when you want to. The History page shows the remote once one is set; pushing stays a manual step, so nothing leaves your machine on its own.
+- **Off-machine backup:** add a remote in the workspace folder, and a **Push** button appears on the History page showing how many snapshots aren't on the remote yet. Pushing only ever happens when you click it: nothing leaves your machine on its own.
 
 ```bash
 cd workspace
-git remote add origin git@github.com:you/my-notes.git   # a private repo
-git push -u origin main
+git remote add origin https://github.com/you/my-notes.git   # create it private, and empty
 ```
+
+  The first push sets the upstream. Git must already have credentials it can use without prompting (on Windows, the credential manager you use for any other repo); a push that would need a prompt fails with a message instead of hanging, and pushing once from a terminal saves them.
 
 ## Code blocks
 
@@ -214,7 +215,7 @@ counts = counts.dropna()  # [!code --]
 | `GET /api/index` | All notes (title, type, tags), linkable files, tag counts and frontmatter field counts. Parsed notes are cached by mtime |
 | `GET /api/query?q=…` | `{ columns, rows: [{ path, title, values }], total, errors }` for a query. At most 500 rows |
 | `GET /api/history` | `{ status, commits }`. `?path=note.md` limits it to one note; `?path=…&rev=…` returns that note's text at that snapshot |
-| `POST /api/history` | `{ action: "init" \| "snapshot" \| "restore", path?, rev?, message? }` |
+| `POST /api/history` | `{ action: "init" \| "snapshot" \| "push" \| "restore", path?, rev?, message? }` |
 | `POST /api/citations/lookup` | `{ query }` → metadata, suggested key, and `existingKey` if already in the library |
 | `GET /api/references` | Entries in `references.bib` with APA text, in-text form and BibTeX. `error` if the file can't be parsed |
 | `POST /api/references` | `{ query, key }`. Re-fetches the metadata (cached briefly) and appends to `references.bib`. `409` for a duplicate work or key |

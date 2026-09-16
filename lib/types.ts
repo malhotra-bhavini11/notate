@@ -108,6 +108,8 @@ export interface HistoryStatusDTO {
   last?: HistoryCommit;
   /** `origin` URL, when one is set. */
   remote?: string;
+  /** Snapshots not yet pushed; undefined when nothing has been pushed yet. */
+  ahead?: number;
   snapshotSeconds: number;
   auto: boolean;
   error?: string;

@@ -18,8 +18,16 @@ const FALLBACK_IDENTITY = ["-c", "user.name=notate", "-c", "user.email=notate@lo
 const RECORD = "\u001e";
 const FIELD = "\u001f";
 
-async function git(args: string[], cwd: string): Promise<string> {
-  const { stdout } = await execFileAsync("git", args, { cwd, windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
+async function git(args: string[], cwd: string, timeout = 0): Promise<string> {
+  const { stdout } = await execFileAsync("git", args, {
+    cwd,
+    windowsHide: true,
+    maxBuffer: 32 * 1024 * 1024,
+    timeout,
+    // Never wait on a terminal or a credential pop-up: a push that needs one
+    // fails with a message instead of hanging the request.
+    env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" },
+  });
   return stdout;
 }
 
@@ -88,11 +96,13 @@ export async function getStatus(): Promise<HistoryStatusDTO> {
   const root = await repoRoot();
   if (!root) return base;
 
-  const [porcelain, count, log, remote] = await Promise.all([
+  const [porcelain, count, log, remote, ahead] = await Promise.all([
     git(["status", "--porcelain"], root).catch(() => ""),
     git(["rev-list", "--count", "HEAD"], root).catch(() => "0"),
     git(["log", "--max-count=1", LOG_FORMAT, "--name-only"], root).catch(() => ""),
     git(["remote", "get-url", "origin"], root).catch(() => ""),
+    // Fails when there's no upstream yet, which means nothing has been pushed.
+    git(["rev-list", "--count", "@{upstream}..HEAD"], root).catch(() => ""),
   ]);
   return {
     ...base,
@@ -101,6 +111,7 @@ export async function getStatus(): Promise<HistoryStatusDTO> {
     commits: Number(count.trim()) || 0,
     last: parseCommits(log)[0],
     remote: remote.trim() || undefined,
+    ahead: ahead.trim() === "" ? undefined : Number(ahead.trim()),
   };
 }
 
@@ -168,6 +179,51 @@ async function commitAll(root: string, subject?: string): Promise<HistoryCommit 
 export async function snapshot(subject?: string): Promise<HistoryCommit | null> {
   const root = await requireRepo();
   return serial(() => commitAll(root, subject));
+}
+
+/** Seconds a push may take before it's treated as stuck (e.g. waiting on credentials). */
+const PUSH_TIMEOUT_MS = 60_000;
+
+/**
+ * Pushes to `origin`, setting the upstream on the first push. Always started by
+ * the person at the keyboard: notes never leave the machine on their own.
+ */
+export async function push(): Promise<{ output: string }> {
+  const root = await requireRepo();
+  const remote = (await git(["remote", "get-url", "origin"], root).catch(() => "")).trim();
+  if (!remote) {
+    throw new WorkspaceError("No remote yet. Add one with `git remote add origin <url>` in the workspace folder", 409);
+  }
+  return serial(async () => {
+    const branch = (await git(["rev-parse", "--abbrev-ref", "HEAD"], root)).trim();
+    try {
+      const output = await git(["push", "--set-upstream", "origin", branch], root, PUSH_TIMEOUT_MS);
+      return { output: output.trim() || `Pushed ${branch} to ${remote}` };
+    } catch (err) {
+      const message = String((err as { stderr?: string }).stderr ?? (err as Error).message ?? err).trim();
+      // git writes progress to stderr, so a "failure" with no error words is a success.
+      if (/^(Everything up-to-date|To )/m.test(message) && !/(error|fatal|rejected|denied)/i.test(message)) {
+        return { output: message };
+      }
+      throw new WorkspaceError(pushHint(message), 502);
+    }
+  });
+}
+
+/** Turns git's push errors into something actionable. */
+function pushHint(message: string): string {
+  const lines = message.split(/\r?\n/);
+  const first = lines.find((line) => /fatal|error|rejected|denied/i.test(line)) ?? lines[0];
+  if (/could not read Username|Authentication failed|terminal prompts disabled/i.test(message)) {
+    return `${first} — git needs credentials it can use without prompting. Push once from a terminal in the workspace folder to save them.`;
+  }
+  if (/Repository not found|does not appear to be a git repository/i.test(message)) {
+    return `${first} — check the repository exists and that your account can write to it.`;
+  }
+  if (/rejected|non-fast-forward|fetch first/i.test(message)) {
+    return `${first} — the remote has commits this copy doesn't. Run \`git pull --rebase\` in the workspace folder.`;
+  }
+  return first;
 }
 
 let pending: ReturnType<typeof setTimeout> | null = null;
