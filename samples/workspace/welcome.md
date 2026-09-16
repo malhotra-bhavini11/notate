@@ -10,7 +10,7 @@ date: 2026-09-15
 Everything here is a plain Markdown file in the `workspace/` folder. Edit notes in the app or in any editor. The app picks up outside changes when you switch back to its tab.
 
 ## Basics
-- **New note**: the `+` in the sidebar, or `Ctrl+Alt+N`. Templates: paper review, code/pipeline review, experiment log, theorem/proof.
+- **New note**: the `+` in the sidebar, or `Ctrl+Alt+N`. Templates: paper review, code/pipeline review, experiment log, mathematical background, theorem/proof.
 - **Autosave**: 1 second after you stop typing. `Ctrl+S` saves immediately.
 - **Frontmatter** (title, type, date, tags, custom fields) is edited in the card above the note body.
 - **Filter files**: `Ctrl+K`.

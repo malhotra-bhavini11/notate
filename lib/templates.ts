@@ -135,6 +135,64 @@ Big-O / memory hotspots:
 `,
   },
   {
+    id: "concept",
+    label: "Mathematical background",
+    description: "Explain a concept: intuition first, then definitions, results, and a worked example.",
+    folder: "math",
+    frontmatter: (title, date) => ({
+      title,
+      type: "concept",
+      field: "",
+      prerequisites: [],
+      tags: [],
+      date,
+    }),
+    body: (title) => `# ${title}
+
+> [!abstract] In one sentence
+<!-- The idea in plain language, no notation. If you can't write this yet, write the rest first and come back. -->
+
+## Why it matters
+<!-- Where this shows up in your own work, and what it buys you. -->
+
+## Intuition
+<!-- The picture you'd draw on a whiteboard, before any formalism. -->
+
+## Notation
+| Symbol | Means | Lives in |
+|---|---|---|
+| $x$ |  |  |
+
+> [!definition]
+>
+
+> [!theorem]
+>
+
+> [!proof]
+>
+
+## Worked example
+> [!example]
+> <!-- Smallest concrete case: real numbers, a tiny dataset, a 2x2 matrix. -->
+
+## In code
+\`\`\`python
+\`\`\`
+
+## Pitfalls
+> [!warning]
+> <!-- Assumptions people forget, edge cases, the thing that bit you. -->
+
+## Open questions
+> [!question]
+>
+
+## Related
+<!-- [[Another concept]], and sources cited with [@key]. -->
+`,
+  },
+  {
     id: "theorem-proof",
     label: "Theorem / proof",
     description: "Definitions, statement, proof sketch, examples.",

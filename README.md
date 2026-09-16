@@ -133,6 +133,21 @@ type:paper-review tag:scrna-seq -has:dataset year:>=2020 sort:-year show:authors
 - **Query page:** lists every frontmatter field with how many notes set it. Click a column header to sort. **Copy CSV** exports the results, and **Copy as note block** gives you a fence to paste.
 - **Mistakes:** an unknown directive value such as `limit:abc` is reported above the table rather than failing the query.
 
+## Note templates
+
+**New note** (`+` in the sidebar, or `Ctrl+Alt+N`) starts from a template; each sets a `type` in the frontmatter, so queries like `type:concept` work straight away.
+
+| Template | `type` | Folder | For |
+|---|---|---|---|
+| Blank note | — | root | Anything |
+| Paper review | `paper-review` | `papers/` | Question, data, methods, statistics, limitations |
+| Code / pipeline review | `code-review` | `code-reviews/` | Stages, correctness, reproducibility, performance |
+| Experiment log | `experiment` | `experiments/` | Hypothesis, setup, parameters, results, next steps |
+| Mathematical background | `concept` | `math/` | Explaining a concept to yourself: intuition, notation, definition, theorem, worked example, pitfalls |
+| Theorem / proof | `theorem` | `math/` | A single result and its proof |
+
+The templates live in [lib/templates.ts](lib/templates.ts); edit them to taste.
+
 ## Diagrams and callouts
 
 **Diagrams:** a ```mermaid fence is drawn with [Mermaid](https://mermaid.js.org) — flowcharts for pipeline DAGs, plus sequence, state, class, ER, Gantt, pie and git graphs. `title="…"` names the diagram in its header. The library loads on first use and keeps the source out of the way, so **Copy** on the header gives you the diagram text back.
