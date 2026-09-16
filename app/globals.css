@@ -25,6 +25,19 @@
 .accession-link {
   @apply font-mono text-[0.9em] text-emerald-700 underline decoration-emerald-700/30 decoration-dotted underline-offset-2 hover:decoration-solid dark:text-emerald-400;
 }
+/* Callouts (components/callout.tsx). `> [!proof]` closes with a tombstone, as
+   a proof does in print. */
+.callout-qed .callout-body > p:last-child::after {
+  content: " E";
+  margin-left: 0.25rem;
+}
+/* Mermaid diagrams. Mermaid writes its own max-width inline, so the override
+   has to be !important to keep a wide diagram inside a narrow pane. */
+.mermaid-diagram svg {
+  max-width: 100% !important;
+  height: auto;
+}
+
 /* Shiki code blocks (components/code-block.tsx). Lines become grid rows so
    highlight and diff backgrounds span the full width; the "\n" text nodes
    between lines are whitespace-only and don't render as grid items. */

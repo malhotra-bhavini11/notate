@@ -15,6 +15,16 @@ date: 2026-09-15
 Test data: GEO series GSE60450 (mouse mammary gland RNA-seq). Genes are keyed by Ensembl IDs, e.g. ENSMUSG00000059552 (*Trp53*).
 
 ## Pipeline overview
+```mermaid title="normalize_counts.py, as it runs today"
+flowchart LR
+  A[("counts.tsv")] --> B["load_counts()"]
+  B --> C["log_cpm()"]
+  C --> D["filter_expressed()"]
+  D --> E[("normalised.tsv")]
+  C -. "library sizes include
+genes dropped later" .-> D
+```
+
 | Stage | Input | Output | Tool |
 |---|---|---|---|
 | Load | `counts.tsv` | DataFrame | pandas |
@@ -24,6 +34,9 @@ Test data: GEO series GSE60450 (mouse mammary gland RNA-seq). Genes are keyed by
 ## Correctness
 1. `filter_expressed` ([[pipelines/normalize_counts.py#L24-L26]]) compares **log-CPM** values against `min_count: 10`, a raw-count threshold. $\log_2 \mathrm{CPM} \ge 10$ means CPM $\ge 1024$, so almost every gene is dropped.
 2. The filter runs after normalisation ([[pipelines/normalize_counts.py#L32]]), so library sizes include genes that are later removed.
+
+> [!caution] Threshold is applied on the wrong scale
+> `min_count: 10` is a raw-count threshold, so comparing it against log-CPM silently drops nearly every gene. Nothing errors; the output is just almost empty.
 
 Filter on raw counts first, then normalise:
 

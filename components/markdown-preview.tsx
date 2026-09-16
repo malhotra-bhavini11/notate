@@ -11,23 +11,27 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import type { PluggableList } from "unified";
 
+import { Callout } from "@/components/callout";
 import { CodeBlock } from "@/components/code-block";
+import { MermaidDiagram } from "@/components/mermaid-diagram";
 import { QueryBlock } from "@/components/query-results";
 import { useNoteLinks } from "@/components/use-note-links";
 import { useWorkspace } from "@/components/workspace-provider";
 import { ACCESSION_TYPE_BY_KEY } from "@/lib/accessions";
 import { formatAnchor, parseAnchor } from "@/lib/anchors";
+import { remarkCallouts } from "@/lib/callouts";
+import { rehypeFenceBlocks } from "@/lib/fence-blocks";
 import { CODE_THEME, CODE_TRANSFORMERS, loadHighlighter, rehypeCodeFence } from "@/lib/highlighter";
 import { extractLinksAndTags, parseCitation, remarkWikiTokens } from "@/lib/markdown-tokens";
 import { noteHref, referencesHref, tagHref } from "@/lib/paths";
-import { rehypeQueryBlocks } from "@/lib/query";
 import type { ReferenceDTO } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens];
-// KaTeX and query blocks first: display math and ```query also arrive as
-// <pre><code>, and the highlighter must not turn them into code blocks.
-const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeQueryBlocks, rehypeCodeFence];
+const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkWikiTokens, remarkCallouts];
+// KaTeX and the self-rendered fences first: display math, ```query and
+// ```mermaid also arrive as <pre><code>, and the highlighter must not turn
+// them into code blocks.
+const BASE_REHYPE_PLUGINS: PluggableList = [rehypeKatex, rehypeFenceBlocks, rehypeCodeFence];
 
 interface MarkdownPreviewProps {
   content: string;
@@ -83,11 +87,28 @@ const COMPONENTS: Components = {
   },
   div({ node, children, ...props }) {
     const properties = node?.properties ?? {};
-    if (typeof properties.dataQuery === "string") {
-      const title = typeof properties.dataQueryTitle === "string" ? properties.dataQueryTitle : undefined;
-      return <QueryBlock query={properties.dataQuery} title={title} />;
+    const title = typeof properties.dataQueryTitle === "string" ? properties.dataQueryTitle : undefined;
+    if (typeof properties.dataQuery === "string") return <QueryBlock query={properties.dataQuery} title={title} />;
+    if (typeof properties.dataMermaid === "string") {
+      const caption = typeof properties.dataMermaidTitle === "string" ? properties.dataMermaidTitle : undefined;
+      return <MermaidDiagram code={properties.dataMermaid} title={caption} />;
     }
     return <div {...props}>{children}</div>;
+  },
+  aside({ node, children, ...props }) {
+    const properties = node?.properties ?? {};
+    if (typeof properties.dataCallout !== "string") return <aside {...props}>{children}</aside>;
+    const number = Number(properties.dataCalloutNumber);
+    return (
+      <Callout
+        type={properties.dataCallout}
+        title={typeof properties.dataCalloutTitle === "string" ? properties.dataCalloutTitle : undefined}
+        number={Number.isFinite(number) && number > 0 ? number : undefined}
+        fold={properties.dataCalloutFold === "-" || properties.dataCalloutFold === "+" ? properties.dataCalloutFold : null}
+      >
+        {children}
+      </Callout>
+    );
   },
   pre({ node, children, ...props }) {
     const properties = node?.properties ?? {};

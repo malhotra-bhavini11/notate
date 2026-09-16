@@ -2,8 +2,6 @@
 // Pure and dependency-free: the server runs them, and the query page and note
 // preview share the parser for errors and column names.
 
-import type { Element as HastElement, Root as HastRoot } from "hast";
-
 import { tagMatches } from "./link-resolver";
 
 export type FieldOp = "eq" | "contains" | "gt" | "gte" | "lt" | "lte" | "range";
@@ -441,34 +439,4 @@ export function countFields(frontmatters: Record<string, unknown>[]): { name: st
   return [...counts]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-}
-
-/**
- * Rehype plugin: a ```query fence becomes `<div data-query>` for the preview to
- * render as a live table. Runs before the highlighter, which then skips it.
- */
-export function rehypeQueryBlocks() {
-  return (tree: HastRoot) => {
-    const walk = (node: HastRoot | HastElement) => {
-      node.children.forEach((child, i) => {
-        if (child.type !== "element") return;
-        const code = child.children[0];
-        const classes = code?.type === "element" && Array.isArray(code.properties.className) ? code.properties.className : [];
-        if (child.tagName === "pre" && code?.type === "element" && code.tagName === "code" && classes.includes("language-query")) {
-          const text = code.children.map((c) => (c.type === "text" ? c.value : "")).join("");
-          const meta = (code.data as { meta?: string } | undefined)?.meta ?? "";
-          const title = meta.match(/\btitle=(?:"([^"]*)"|'([^']*)')/)?.slice(1).find((v) => v !== undefined);
-          node.children[i] = {
-            type: "element",
-            tagName: "div",
-            properties: { dataQuery: text.trim(), ...(title ? { dataQueryTitle: title } : {}) },
-            children: [],
-          };
-        } else {
-          walk(child);
-        }
-      });
-    };
-    walk(tree);
-  };
 }

@@ -124,6 +124,40 @@ type:paper-review tag:scrna-seq -has:dataset year:>=2020 sort:-year show:authors
 - **Query page:** lists every frontmatter field with how many notes set it. Click a column header to sort. **Copy CSV** exports the results, and **Copy as note block** gives you a fence to paste.
 - **Mistakes:** an unknown directive value such as `limit:abc` is reported above the table rather than failing the query.
 
+## Diagrams and callouts
+
+**Diagrams:** a ```mermaid fence is drawn with [Mermaid](https://mermaid.js.org) — flowcharts for pipeline DAGs, plus sequence, state, class, ER, Gantt, pie and git graphs. `title="…"` names the diagram in its header. The library loads on first use and keeps the source out of the way, so **Copy** on the header gives you the diagram text back.
+
+````markdown
+```mermaid title="normalize_counts.py"
+flowchart LR
+  A[("counts.tsv")] --> B["log_cpm()"] --> C["filter_expressed()"]
+```
+````
+
+A diagram that doesn't parse shows the error and the source instead of breaking the note.
+
+**Callouts:** start a blockquote with `[!type]`, GitHub-style, followed by an optional title.
+
+```markdown
+> [!theorem] Gamma–Poisson mixture
+> If $\Lambda \sim \mathrm{Gamma}(r, \theta)$ and $K \mid \Lambda \sim \mathrm{Poisson}(\Lambda)$, then $K$ is negative binomial.
+
+> [!warning] Raw counts only
+> DESeq2 models raw counts.
+```
+
+| Kind | Types |
+|---|---|
+| Statements (numbered, set in italics) | `theorem`, `lemma`, `proposition` (`claim`), `corollary`, `conjecture` |
+| Other environments | `definition` and `example` (numbered), `proof` (ends with ∎), `remark` |
+| Admonitions | `note` (`info`), `tip`, `important`, `warning`, `caution` (`danger`), `question`, `todo`, `abstract` (`summary`), `quote`, `bug` |
+
+- **Numbering** counts each type separately within the note, so you get Theorem 1, Theorem 2, Lemma 1. Titles show in brackets after the number, as in a paper.
+- **Collapsing:** `[!note]-` starts collapsed, `[!note]+` starts open and can be clicked shut.
+- **Inside a callout** everything else still works: maths, code blocks, links, tags and nested callouts.
+- **Unknown types** stay ordinary blockquotes, so notes written elsewhere aren't mangled.
+
 ## Code blocks
 
 Fenced code in notes is highlighted with Shiki (`github-dark-default`) and gets a header with the language or title and a **Copy** button.
@@ -175,7 +209,7 @@ app/page.tsx         dashboard: recently edited notes
 app/notes/[...slug]  note editor: frontmatter card, Write/Preview, 1 s autosave
 app/files/[...slug]  full-width PDF / code view for a single file
 app/split            dual-pane view (file left, note right)
-components/          app shell, file tree, editor, KaTeX/GFM preview, new-note dialog, split panes
+components/          app shell, file tree, editor, KaTeX/GFM preview, callouts, diagrams, queries, dialogs, split panes
 components/viewers/  react-pdf viewer, code viewer
 lib/                 workspace path guard, tree, notes, frontmatter, templates
 samples/workspace/   seed notes copied on first run

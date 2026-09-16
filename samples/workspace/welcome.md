@@ -48,6 +48,22 @@ A `query` code block keeps a live table in a note:
 type:paper-review -has:dataset sort:-year show:year,doi,tags
 ```
 
+## Diagrams and callouts
+Fence a diagram with `mermaid` to draw it — flowcharts for pipelines, plus sequence, state, class, ER, Gantt, pie and git graphs:
+
+```mermaid title="A tiny pipeline"
+flowchart LR
+  raw[("raw reads")] --> qc["QC"] --> align["align"] --> counts[("counts")]
+```
+
+Start a blockquote with `[!type]` for a callout. `[!theorem]`, `[!lemma]`, `[!definition]`, `[!example]` and `[!remark]` are numbered as you go; `[!proof]` closes with ∎. See [[negative-binomial]].
+
+> [!tip] Collapsing
+> `[!note]-` starts collapsed and `[!note]+` starts open; both can be clicked shut.
+
+> [!warning] Raw counts only
+> DESeq2 models raw counts. Feeding it normalised values breaks the variance assumptions.
+
 ## Markdown features
 | Feature | Syntax |
 |---|---|

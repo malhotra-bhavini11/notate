@@ -1,7 +1,3 @@
-import type { Element, Root as HastRoot } from "hast";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import { unified } from "unified";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,7 +5,6 @@ import {
   countFields,
   parseQuery,
   type QueryableNote,
-  rehypeQueryBlocks,
   resultToCsv,
   runQuery,
   withSort,
@@ -166,20 +161,5 @@ describe("helpers", () => {
       { name: "title", count: 4 },
       { name: "year", count: 3 },
     ]);
-  });
-
-  it("turns ```query fences into query placeholders", async () => {
-    const processor = unified().use(remarkParse).use(remarkRehype).use(rehypeQueryBlocks);
-    const markdown = '> ```query title="Open reviews"\n> type:paper-review\n> -has:dataset\n> ```\n\n```python\nx = 1\n```';
-    const tree = (await processor.run(processor.parse(markdown))) as HastRoot;
-    const elements = tree.children.filter((c): c is Element => c.type === "element");
-    const quoted = elements[0].children.find((c): c is Element => c.type === "element")!;
-    expect(quoted).toEqual({
-      type: "element",
-      tagName: "div",
-      properties: { dataQuery: "type:paper-review\n-has:dataset", dataQueryTitle: "Open reviews" },
-      children: [],
-    });
-    expect(elements[1].tagName).toBe("pre");
   });
 });
